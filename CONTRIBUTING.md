@@ -4,6 +4,10 @@ Thanks for helping. cairn is small on purpose; please read this before opening a
 
 ## Workflow
 
+Branches: `main` holds released code and is protected; work happens on feature branches that
+open pull requests into `develop`. A release is a pull request from `develop` into `main`,
+followed by a `vX.Y.Z` tag (see `.github/workflows/release.yml`).
+
 1. Open an issue first for anything beyond a small fix, so we can agree on the behaviour.
 2. Behaviour is specified in [`docs/specs/`](docs/specs/README.md): change the requirement
    (`requirements.md`) or design decision (`design.md`) in the same pull request as the code.
