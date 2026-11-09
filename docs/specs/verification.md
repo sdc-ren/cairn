@@ -54,6 +54,12 @@ Nếu bước 1 bị hỏi quyền: ghi lại nguyên văn lệnh agent chạy; 
 | R24.4 chất lượng (F3, F2) | Chạy kịch bản [eval/scenario.md](eval/scenario.md) 3 lần, mỗi lần ≥ 7/8; nhật ký dưới ≥ 10 lần resume, ≥ 80% bước đầu đúng, trung bình ≤ 1 lần giải thích lại. | Chờ |
 | P4 S1/S2/S3 | S1 hai tài khoản; S2 commit tay sau handoff rồi resume (drift báo commit mới); S3 hai worktree. | Chờ |
 
+## F3 — kịch bản chuẩn
+
+| Lần | Ngày | Điều kiện | Điểm | Ghi chú |
+|---|---|---|---|---|
+| 1 | 2026-11-09 | Sau `/compact` trong cùng phiên, repo `/tmp/cairn-eval` | 8/8 | Handoff `20261109-133719-main`; giữ đủ mục tiêu, lý do đặt logic trong `total()`, ROUND_HALF_UP, double-round đã bỏ, các bước tiếp theo, câu hỏi về thuế. |
+
 ## Nhật ký dùng thật (R24.3)
 
 | Ngày | ID | Nguồn (hook/skill) | Số lần giải thích lại | Bước đầu đúng (Y/N) | Thiếu thông tin gì | Hook gây phiền? |
