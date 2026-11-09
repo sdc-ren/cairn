@@ -13,7 +13,7 @@ import os
 import re
 import tempfile
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -24,11 +24,16 @@ from agent_cairn.constants import (
     HANDOFF_SUFFIX,
     HOME_DIR_NAME,
     HOME_ENV,
+    KEEP_OPEN_DEFAULT,
+    KEEP_OPEN_ENV,
+    KEEP_RESUMED_DEFAULT,
+    KEEP_RESUMED_ENV,
     LOCK_FILE_NAME,
     PROJECT_FILE_NAME,
     PROJECT_HASH_CHARS,
     SLUG_FALLBACK,
     SLUG_MAX_CHARS,
+    STATUS_OPEN,
     STATUS_RESUMED,
     STORE_ENV,
 )
@@ -36,9 +41,41 @@ from agent_cairn.errors import InvalidHandoffError, NotAGitRepoError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
-    from datetime import datetime
+    from datetime import datetime, timedelta
 
     from agent_cairn.document import Handoff, MetaValue
+
+
+@dataclass(frozen=True)
+class Retention:
+    """How long handoffs are kept: ``resumed`` after resume, ``open`` after creation (R14)."""
+
+    resumed: timedelta
+    open: timedelta
+
+
+def retention_from_env() -> Retention:
+    """Read ``CAIRN_KEEP_RESUMED`` (default 7d) and ``CAIRN_KEEP_OPEN`` (default 30d)."""
+    return Retention(
+        resumed=timeutil.parse_duration(os.environ.get(KEEP_RESUMED_ENV, KEEP_RESUMED_DEFAULT)),
+        open=timeutil.parse_duration(os.environ.get(KEEP_OPEN_ENV, KEEP_OPEN_DEFAULT)),
+    )
+
+
+def expired(meta: Mapping[str, MetaValue], now: datetime, retention: Retention) -> bool:
+    """Return whether a handoff is past its retention (R14.2, R14.3); unreadable dates never are."""
+    status = meta.get("status")
+    if status == STATUS_RESUMED:
+        stamp, limit = meta.get("resumed_at") or meta.get("created_at"), retention.resumed
+    elif status == STATUS_OPEN:
+        stamp, limit = meta.get("created_at"), retention.open
+    else:
+        return False
+    try:
+        return now - timeutil.parse_iso(str(stamp)) > limit
+    except ValueError:
+        return False
+
 
 _NOT_SLUG = re.compile(r"[^a-z0-9-]+")
 _DASHES = re.compile(r"-{2,}")
@@ -153,15 +190,6 @@ def newest(store: Path, *, branch: str | None = None, status: str | None = None)
     return None
 
 
-def find(store: Path, ref: str) -> Handoff | None:
-    """Return the newest handoff whose task matches ``ref`` (any case) or whose ID is ``ref``."""
-    wanted = ref.casefold()
-    for handoff in handoffs(store):
-        if str(handoff.meta.get("task", "")).casefold() == wanted or handoff.meta.get("id") == ref:
-            return handoff
-    return None
-
-
 def mark_resumed(handoff: Handoff, *, now: datetime) -> Handoff:
     """Mark ``handoff`` resumed and count it; body and captured state stay byte-exact (R9.3)."""
     path = path_of(handoff)
@@ -177,15 +205,25 @@ def mark_resumed(handoff: Handoff, *, now: datetime) -> Handoff:
     return replace(current, meta=meta, path=path)
 
 
-def cleanup(store: Path, *, key: str | None, keep: str) -> None:
-    """Delete other handoffs with the same key after a save (R14.1, R14.5). Call inside ``lock``."""
-    if key is None:
-        return
+def cleanup(
+    store: Path, *, key: str | None, keep: str | None, now: datetime, retention: Retention
+) -> None:
+    """Delete handoffs replaced by ``key`` or past ``retention``; never ``keep`` (R14.1-R14.7).
+
+    Call inside ``lock``. Files that do not parse are skipped, never deleted (R14.8).
+    """
     for handoff in _iter_handoffs(store):
         hid = handoff.meta.get("id")
-        if handoff_key(handoff.meta) == key and hid != keep:
-            path_of(handoff).unlink()
-            out.note(f"removed {hid} (replaced)")
+        if hid == keep:
+            continue
+        if key is not None and handoff_key(handoff.meta) == key:
+            reason = "replaced"
+        elif expired(handoff.meta, now, retention):
+            reason = "expired"
+        else:
+            continue
+        path_of(handoff).unlink()
+        out.note(f"removed {hid} ({reason})")
 
 
 def path_of(handoff: Handoff) -> Path:

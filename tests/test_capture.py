@@ -43,6 +43,7 @@ def test_collect_detached_head_has_no_branch(repo_with_work):
 
 
 @pytest.mark.req("R4.2")
+@pytest.mark.req("R4.3")
 def test_collect_caps_changes_and_keeps_total(git_repo):
     commit(git_repo)
     for n in range(55):
@@ -78,7 +79,7 @@ def test_captured_markdown_holds_paths_not_file_contents(git_repo):
     secret_line = "token = " + "ghp_" + "z" * 36
     (git_repo / "leak.env").write_text(secret_line + "\n")
 
-    text = render.captured(capture.collect(git_repo), (), captured_at=CREATED)
+    text = render.captured(capture.collect_repo(git_repo, use_gh=False), (), captured_at=CREATED)
 
     assert "leak.env" in text
     assert "ghp_" not in text
@@ -88,7 +89,11 @@ def test_captured_markdown_holds_paths_not_file_contents(git_repo):
 def test_captured_markdown_lists_worktree_facts(repo_with_work):
     state = capture.collect(repo_with_work)
 
-    text = render.captured(state, (), captured_at=CREATED.astimezone(timezone.utc))
+    text = render.captured(
+        capture.RepoState(state, (), capture.PrLookup("skipped")),
+        (),
+        captured_at=CREATED.astimezone(timezone.utc),
+    )
 
     assert text.startswith("## Captured state (auto-generated — do not edit)\n")
     assert "Captured at 2026-11-09T08:30:12Z by cairn" in text
@@ -103,7 +108,7 @@ def test_captured_markdown_notes_truncated_changes(git_repo):
     for n in range(52):
         (git_repo / f"f{n:02}.txt").write_text("x")
 
-    text = render.captured(capture.collect(git_repo), (), captured_at=CREATED)
+    text = render.captured(capture.collect_repo(git_repo, use_gh=False), (), captured_at=CREATED)
 
     assert "  - … and 2 more" in text
 
@@ -112,7 +117,9 @@ def test_captured_markdown_notes_truncated_changes(git_repo):
 def test_collect_outside_git_records_directory_only(outside_repo):
     state = capture.collect(outside_repo)
 
-    text = render.captured(state, (), captured_at=CREATED)
+    text = render.captured(
+        capture.RepoState(state, (), capture.PrLookup("skipped")), (), captured_at=CREATED
+    )
     assert (state.is_git, state.branch, state.head) == (False, None, "")
     assert "- not a git repository" in text
 
@@ -142,7 +149,9 @@ def test_resources_round_trip_through_captured_json(outside_repo):
     (outside_repo / "p").mkdir()
     resources = capture.collect_resources(outside_repo, [("pipeline", "p")])
 
-    text = render.captured(capture.collect(outside_repo), resources, captured_at=CREATED)
+    text = render.captured(
+        capture.collect_repo(outside_repo, use_gh=False), resources, captured_at=CREATED
+    )
 
     assert "- pipeline `p`: present" in text
     payload = document.captured_json(text)

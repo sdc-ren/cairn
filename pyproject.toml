@@ -31,7 +31,7 @@ Issues = "https://github.com/sdc-ren/cairn/issues"
 cairn = "agent_cairn.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.6"]
+dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.6", "mypy>=1.8", "pylint>=3", "vulture>=2.10"]
 
 [tool.setuptools.dynamic]
 version = { attr = "agent_cairn.__version__" }
@@ -75,3 +75,23 @@ convention = "google"
 "src/agent_cairn/cli.py" = ["BLE001"]
 "src/agent_cairn/hook.py" = ["BLE001"]
 "tests/**" = ["D", "S101", "S603", "S607", "PLR2004", "ARG001"]
+
+[tool.mypy]
+strict = true
+python_version = "3.9"
+files = ["src"]
+
+[tool.pylint.similarities]
+min-similarity-lines = 6
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["agent_cairn"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true

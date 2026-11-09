@@ -76,28 +76,28 @@ Phạm vi: bảng "Phạm vi M0" ở requirements §6. Mục tiêu 1–2 ngày. 
 
 ## Milestone 1 — MVP 0.1 (plugin tự chứa, tự dùng)
 
-Các task dưới đây **mở rộng** module đã có từ M0, không viết lại. Phần nào đã làm ở K1–K5 thì task tương ứng chỉ bổ sung phần còn thiếu; Done khi giữ nguyên.
+Các task dưới đây **mở rộng** module đã có từ M0, không viết lại. Đã làm (2026-11-09): mọi task tự động hoá được; golden file ở B1/C4/E2 được thay bằng test assert theo từng dòng vì đường dẫn tạm và SHA thay đổi mỗi lần chạy. Còn lại các phần cần Claude Code thật hoặc thời gian dùng thật: E5, F3, P4, F2. Phần nào đã làm ở K1–K5 thì task tương ứng chỉ bổ sung phần còn thiếu; Done khi giữ nguyên.
 
 ### A. Nền móng
 
-- [ ] **A1. Hoàn thiện repo** (mở rộng K1)
+- [x] **A1. Hoàn thiện repo** (mở rộng K1)
   - Đủ layout design §3. `pyproject.toml`: `requires-python = ">=3.9"`, extras `dev = [pytest, pytest-cov, ruff, mypy, pylint, vulture]`, cấu hình công cụ đúng CODING_STANDARDS §9. `__version__ = "0.1.0.dev0"`. `LICENSE` MIT, `README.md` (EN) khung, `CHANGELOG.md`, `CONTRIBUTING.md` trỏ tới CODING_STANDARDS.
   - `Makefile`: `test`, `lint`, `fmt`, `cov`, `reqcov`, `gen`.
   - `scripts/check_sizes.py` (CS-13).
   - **Done khi:** `pip install -e '.[dev]'` ok; `python -m agent_cairn` in usage tạm; `make lint test` xanh với một test smoke.
   - Refs: R18.5, R18.7, R20.1
 
-- [ ] **A2. CI**
+- [x] **A2. CI**
   - `.github/workflows/ci.yml`: `macos-latest`, `ubuntu-latest` × Python `3.9`, `3.13`; chạy `make lint`, `pytest --cov=agent_cairn --cov-branch --cov-fail-under=85`, `python scripts/req_coverage.py --level M1 --allow-missing` (bỏ cờ ở F1), `python scripts/gen_plugin.py --check` (từ P2).
   - **Done khi:** CI xanh trên PR đầu tiên.
   - Refs: R18.2, R20.4, R20.5
 
-- [ ] **A3. Module nền: `errors`, `constants`, `out`, `proc`, `timeutil`**
+- [x] **A3. Module nền: `errors`, `constants`, `out`, `proc`, `timeutil`**
   - Theo design §9 và bảng CS-2. `proc.run(args, *, cwd, timeout, stdin=None) -> Result`; thiếu executable hoặc timeout → `CairnError` (thông điệp có tên lệnh, không có dữ liệu người dùng). `out.emit/warn/fail` theo R17.7–R17.8. `timeutil.now_utc` inject được.
   - **Done khi:** test unit xanh; quy ước thông điệp và màu được kiểm.
   - Refs: R17.7, R17.8, R17.9, R18.4
 
-- [ ] **A4. Fixture và test tĩnh**
+- [x] **A4. Fixture và test tĩnh**
   - `conftest.py`: `git_repo`, `commit()`, `add_worktree()`, `bare_remote()`, `fake_gh()`, `frozen_clock`, factory `make_handoff()`/`make_worktree_state()`, fixture autouse cô lập env (design §10).
   - `tests/test_imports.py`: chỉ stdlib; đồ thị phụ thuộc đúng design §3; chỉ `proc` import `subprocess`; chỉ `out` gọi `print`; không `shell=True`.
   - **Done khi:** test mẫu dùng mọi fixture chạy được; test tĩnh xanh.
@@ -105,105 +105,105 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ### B. Lõi dữ liệu (thuần)
 
-- [ ] **B1. `document.py`**
+- [x] **B1. `document.py`**
   - `Handoff`; `parse(text, path)`; `render(h, captured_md)`; luật design §4.2; khối `captured-json`.
   - **Done khi:** round-trip byte-for-byte với golden `handoff_full.md` (= ví dụ design §4.1); title có `:`/`"`; khoá lạ giữ nguyên; thiếu khối JSON → `captured=None`; file hỏng → lỗi có tên file.
   - Refs: R2.1–R2.9
 
-- [ ] **B2. `validate.py`**
+- [x] **B2. `validate.py`**
   - `validate(body) -> list[Violation(level, line, rule, message)]`; rule-id ở `constants.py` (design §5.1).
   - **Done khi:** mỗi luật R5.3 có một case vi phạm + một case qua; định dạng `line N: rule: message` được kiểm; comment HTML + `TODO` coi là rỗng.
   - Refs: R5.3, R5.4, R2.4, R2.5
 
-- [ ] **B3. `secrets.py`**
+- [x] **B3. `secrets.py`**
   - Pattern design §6.2; `scan`, `redact`.
   - **Done khi:** mỗi pattern có mẫu dương + mẫu âm gần giống; placeholder không bị bắt; `Finding` không chứa giá trị; `redact` giữ phần còn lại của dòng.
   - Refs: R12.1–R12.3
 
-- [ ] **B4. `store.py`**
+- [x] **B4. `store.py`**
   - `root(cwd)`, `ensure()`, `new_id()` + slug + hậu tố trùng, `write_new()` (O_EXCL, 0600, atomic), `iter_meta()` chỉ đọc frontmatter, `read()`, `mark_resumed()`, `lock()` (`fcntl.flock`).
   - Thêm `cleanup` đầy đủ (design §5.2): hết hạn `resumed`/`open`, hàm thuần `expired()`.
   - **Done khi:** permission thực tế đúng; trùng ID không ghi đè; file hỏng bị bỏ qua có cảnh báo và không bị xoá; `mark_resumed` giữ Body/Captured byte-for-byte; gọi từ worktree phụ vẫn trỏ về Store của main repo; `expired()` có test bảng cho biên 7d/30d và biến môi trường; detached không bị thay thế.
   - Refs: R1.1–R1.6, R6.6, R9.3, R14.2, R14.3, R14.8
 
-- [ ] **B5. `resolve.py`**
+- [x] **B5. `resolve.py`**
   - **Done khi:** đủ 5 tiêu chí R7 có test.
   - Refs: R7.1–R7.5
 
 ### C. Git và capture
 
-- [ ] **C1. `gitio.py`**
+- [x] **C1. `gitio.py`**
   - Hàm theo bảng design §8; kiểm git ≥ 2.31.
   - **Done khi:** test repo thật: tên file có dấu cách/Unicode, rename, untracked, detached, có/không upstream.
   - Refs: R4.2, R18.3
 
-- [ ] **C2. `gh.py`**
+- [x] **C2. `gh.py`**
   - **Done khi:** `fake_gh` cho đủ 5 kịch bản (ok, exit 1, timeout, JSON hỏng, không có gh).
   - Refs: R4.4, R4.5
 
-- [ ] **C3. `capture.py`**
+- [x] **C3. `capture.py`**
   - `collect(cwd, *, use_gh, git_timeout)`; `to_json()` theo design §4.3.
   - **Done khi:** repo 3 worktree (một detached, một có PR giả, một prunable) cho kết quả đúng; cắt 50 file + `changes_total`; lỗi từng worktree vào `errors`.
   - Refs: R4.1–R4.8
 
-- [ ] **C4. `render.captured()`**
+- [x] **C4. `render.captured()`**
   - **Done khi:** golden `captured_basic.md`, `captured_no_gh.md`, `captured_errors.md` xanh; worktree có thay đổi chứa chuỗi giống secret không làm lộ nội dung file.
   - Refs: R2.7, R5.7, R12.4, R12.5
 
 ### D. Lệnh
 
-- [ ] **D1. `cli.py` khung**
+- [x] **D1. `cli.py` khung**
   - argparse theo R17.1 (lệnh M1); usage/help/version; ánh xạ lỗi; `KeyboardInterrupt`, `BrokenPipeError`, `CAIRN_DEBUG`.
   - **Done khi:** test mã thoát: không đối số (0), `-h` (0), lệnh lạ (2), lỗi giả lập (1, một dòng, không traceback), lệnh cần repo ngoài repo (5), `version`/`template` chạy ngoài repo.
   - Refs: R17.1–R17.6, R1.7
 
-- [ ] **D2. `template` + `assets/template.md`**
+- [x] **D2. `template` + `assets/template.md`**
   - **Done khi:** template nguyên trạng bị `validate` từ chối; bản điền mẫu qua; chạy ngoài repo.
   - Refs: R3.1–R3.3, R22.1
 
-- [ ] **D3. `capture`**
+- [x] **D3. `capture`**
   - **Done khi:** in dạng đọc và `--json`; `--no-gh`; Store không được tạo sau lệnh.
   - Refs: R4.6, R4.7, R4.9
 
-- [ ] **D4. `save`**
+- [x] **D4. `save`**
   - Theo design §5.1.
   - **Done khi:** TTY không input → 2; thiếu section → 3, liệt kê đủ vi phạm đúng định dạng; secret → 3, stderr không có giá trị; `--redact` lưu được; `--dry-run` không tạo file và không xoá gì; lưu xong thì bản cũ cùng branch bị xoá, bản hết hạn bị dọn; thành công → in đúng `saved <id>`, file parse lại được, `status: open`.
   - Refs: R5.1–R5.9, R12.2, R12.3, R14.1, R14.4–R14.6
 
-- [ ] **D5. `list`**
+- [x] **D5. `list`**
   - **Done khi:** test 25 handoff (2 branch, 2 status) cho mọi cờ; Store rỗng.
   - Refs: R6.1–R6.6
 
-- [ ] **D6. `show`**
+- [x] **D6. `show`**
   - **Done khi:** in nguyên văn; `--path`; nội dung/mtime không đổi.
   - Refs: R8.1–R8.3
 
-- [ ] **D7. `doctor`**
+- [x] **D7. `doctor`**
   - **Done khi:** test môi trường thiếu gh, ngoài repo, version plugin lệch; mã thoát đúng.
   - Refs: R15.1, R15.2
 
 ### E. Resume, drift, hook
 
-- [ ] **E1. `drift.py`**
+- [x] **E1. `drift.py`**
   - `classify(facts)` thuần + `compute(h, *, git_timeout)` lấy facts từ `gitio`.
   - **Done khi:** `classify` có test bảng cho mọi state/level; `compute` trên repo thật: không đổi; +3 commit; +12 commit (cắt 10, total 12); reset rồi commit (diverged); head mất sau `gc --prune=now`; đổi branch; worktree bị xoá; tập file still/newly/clean.
   - Refs: R10.1–R10.9
 
-- [ ] **E2. `render.resume()` + `assets/preamble.md`**
+- [x] **E2. `render.resume()` + `assets/preamble.md`**
   - **Done khi:** golden `resume_full.txt`, `resume_brief.txt`, `resume_already.txt`; JSON đúng design §4.4.
   - Refs: R9.1, R9.2, R9.6, R9.7, R9.8, R22.1
 
-- [ ] **E3. Lệnh `resume`**
+- [x] **E3. Lệnh `resume`**
   - **Done khi:** đổi `status`/`resumed_at`/`resume_count`; `--peek` không đổi và không xoá gì; handoff đang resume không bị xoá kể cả khi đã quá hạn; bản khác hết hạn bị dọn; resume lần 2 có cảnh báo; stdout chỉ có output.
   - Refs: R9.3–R9.5, R9.8, R14.4, R14.7
 
-- [ ] **E4. `hook session-start`**
+- [x] **E4. `hook session-start`**
   - Theo design §5.5.
   - **Done khi:** không handoff → stdout rỗng; handoff open đúng branch → JSON hợp lệ, `additionalContext` chứa preamble, status đổi; handoff cũ hơn max-age hoặc branch khác → rỗng; Store hỏng/ngoài repo → mã 0, stdout rỗng; cắt 9 000 ký tự; không gọi `gh` (fake_gh ghi log, assert không được gọi); < 2 giây với 10 worktree; `CAIRN_HOOK=off`.
   - Hook cũng dọn bản hết hạn (R14.4); dòng `removed …` chỉ ra stderr, stdout vẫn đúng JSON.
   - Refs: R13.1, R13.3–R13.8, R14.4, R14.5
 
-- [ ] **E5. `hook pre-compact` + `hook post-compact`**
+- [ ] **E5. `hook pre-compact` + `hook post-compact`** — code, asset, `hooks.json` và test xong; còn chạy `/compact` trên phiên thật (R23.8)
   - Theo design §5.6; Asset `precompact.md`, `nudge.md`; thêm hai entry vào `hooks.json` (design §7.3).
   - Kiểm trên Claude Code thật: chạy `/compact` trong phiên có plugin; xác nhận bản tóm tắt giữ các mục ở R23.2 và agent nhắc đúng một dòng; ghi vào `verification.md`. Không chạy được → áp dụng R23.8.
   - **Done khi:** test design §10 (hàng "Hook nén ngữ cảnh") xanh; bằng chứng thật đã ghi.
@@ -211,23 +211,23 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ### P. Plugin
 
-- [ ] **P1. Manifest, marketplace, launcher** (hoàn thiện K5)
+- [x] **P1. Manifest, marketplace, launcher** (hoàn thiện K5)
   - `.claude-plugin/plugin.json`, `marketplace.json`, `bin/cairn` theo design §7.1–7.2 (chmod 755).
   - **Done khi:** test chạy `bin/cairn version` qua subprocess; `CAIRN_PYTHON` trỏ tới binary giả báo 3.8 → thông điệp R11.4, mã 1; `PYTHONPATH` rác của người dùng không ảnh hưởng.
   - Refs: R11.1, R11.3, R11.4, R18.7
 
-- [ ] **P2. Asset skill + `gen_plugin.py`**
+- [x] **P2. Asset skill + `gen_plugin.py`**
   - Chuyển nội dung `SKILL.md` viết tay ở K5 về Asset; từ đây `skills/` là file sinh.
   - `assets/skills.json`, `skill_handoff.md`, `skill_resume.md` theo design §7.4; `scripts/gen_plugin.py` sinh `skills/*/SKILL.md`, đồng bộ `plugin.json.version`; `--check` báo lệch và mã 1.
   - **Done khi:** `--check` sạch; test plugin (design §10) xanh; description ≤ 1 000 ký tự, chứa cụm kích hoạt EN + VI.
   - Refs: R11.5, R11.7, R11.8, R16.1–R16.5, R22.2, R22.3
 
-- [ ] **P3. `hooks/hooks.json`**
+- [x] **P3. `hooks/hooks.json`**
   - Theo design §7.3, dùng kết quả kiểm dạng exec ở K5 (nếu dạng exec không chạy thì dùng dạng chuỗi `"\"${CLAUDE_PLUGIN_ROOT}/bin/cairn\" hook session-start"`).
   - **Done khi:** test cấu trúc JSON xanh cho mọi entry, kể cả entry của E5.
   - Refs: R11.6, R11.9, R13.2
 
-- [ ] **P4. Cài local và chạy thử end-to-end**
+- [ ] **P4. Cài local và chạy thử end-to-end** — chờ chạy thật S1 hai tài khoản, S2, S3 và cài từ GitHub (R11.2)
   - `claude plugin marketplace add ./cairn` → `claude plugin install cairn@sdc-ren` trên máy thật.
   - Chạy S1 (hai tài khoản), S2 (commit tay sau handoff), S3 (hai worktree); kiểm R16.7: không gõ lệnh terminal nào sau khi cài.
   - **Done khi:** bằng chứng (lệnh, output rút gọn, ảnh nếu cần) ghi trong `docs/specs/verification.md`; mọi lỗi phát hiện được sửa trong task tương ứng.
@@ -235,18 +235,18 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ### F. Hoàn tất MVP
 
-- [ ] **F1. Truy vết requirement**
+- [x] **F1. Truy vết requirement**
   - `scripts/req_coverage.py`: lấy mọi `Rn.m` mức M1 từ `requirements.md` (mức requirement ở tiêu đề, ghi đè bởi `[M2]` cuối dòng tiêu chí), quét marker `req` trong `tests/`; tiêu chí `[manual]` thì tìm ID trong tiêu đề của `verification.md`; in tiêu chí thiếu, mã 1 nếu thiếu. Bỏ `--allow-missing` khỏi CI.
   - **Done khi:** CI xanh không cờ.
   - Refs: R20.2
 
-- [ ] **F3. Kịch bản chuẩn và chấm điểm**
+- [ ] **F3. Kịch bản chuẩn và chấm điểm** — kịch bản, rubric, script và test xong; còn chạy 3 lần thật trên Claude Code (R24.4)
   - `docs/specs/eval/scenario.md`, `eval/rubric.json`, `scripts/eval_setup.sh`, `scripts/eval_check.py` theo design §5.7.
   - Chạy kịch bản 3 lần liên tiếp bằng `/cairn:handoff` rồi chấm; ghi điểm từng lần vào `verification.md`.
   - **Done khi:** test `eval_check.py` (đạt/không đạt, bỏ qua comment template) xanh; 3 lần liên tiếp ≥ 7/8.
   - Refs: R24.1, R24.2, R24.4
 
-- [ ] **F2. Dùng thật và phát hành 0.1.0**
+- [ ] **F2. Dùng thật và phát hành 0.1.0** — chờ dùng thật ≥ 5 ngày và đạt ngưỡng R24.4
   - README (EN) Quickstart ≤ 5 dòng lệnh; tự dùng ≥ 5 ngày làm việc, ghi nhật ký vấn đề vào `verification.md`; tag `v0.1.0`, CHANGELOG.
   - **Done khi:** Definition of Done M1 (requirements §9) đạt, gồm ngưỡng nhật ký R24.4.
   - Refs: R22.4, R24.3, R24.4, requirements §9

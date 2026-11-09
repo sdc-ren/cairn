@@ -66,11 +66,14 @@ def test_plugin_manifest_name_and_version_match_package():
 def test_hooks_register_session_start_in_exec_form():
     hooks = _json("hooks/hooks.json")["hooks"]
 
-    (entry,) = hooks["SessionStart"]
-    (handler,) = entry["hooks"]
-    assert entry["matcher"] == "startup|clear"
-    assert handler["command"] == "${CLAUDE_PLUGIN_ROOT}/bin/cairn"
-    assert handler["args"] == ["hook", "session-start"]
+    entries = {entry["matcher"]: entry["hooks"] for entry in hooks["SessionStart"]}
+    assert entries["startup|clear"][0]["args"] == ["hook", "session-start"]
+    handlers = [h for event in hooks.values() for entry in event for h in entry["hooks"]]
+    assert len(handlers) == 3
+    for handler in handlers:
+        assert handler["type"] == "command"
+        assert handler["command"] == "${CLAUDE_PLUGIN_ROOT}/bin/cairn"
+        assert handler["args"][0] == "hook"
 
 
 @pytest.mark.req("R11.9")

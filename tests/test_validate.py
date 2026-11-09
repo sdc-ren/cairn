@@ -2,11 +2,15 @@ import pytest
 from conftest import FILLED_BODY
 
 from agent_cairn.constants import CAPTURED_MARKER, MAX_BODY_CHARS
-from agent_cairn.validate import Violation, validate
+from agent_cairn.validate import Violation, errors, validate
 
 
 def _rules(body):
-    return [violation.rule for violation in validate(body)]
+    return [violation.rule for violation in errors(validate(body))]
+
+
+def _warnings(body):
+    return [v.rule for v in validate(body) if v.level == "warning"]
 
 
 @pytest.mark.req("R5.3")
@@ -101,3 +105,27 @@ def test_validate_reports_line_of_offending_section():
     (violation,) = validate(body)
 
     assert violation.line == 3
+
+
+@pytest.mark.req("R5.3")
+@pytest.mark.req("R2.5")
+def test_validate_missing_recommended_section_is_only_a_warning():
+    body = FILLED_BODY.replace("## Decisions", "## Notes")
+
+    assert _rules(body) == []
+    assert _warnings(body) == ["missing-recommended"]
+
+
+@pytest.mark.req("R5.3")
+@pytest.mark.parametrize("heading", ["Tried", "Didn't work"])
+def test_validate_accepts_tried_section_variants(heading):
+    body = FILLED_BODY.replace("## Tried / didn't work", f"## {heading}")
+
+    assert validate(body) == []
+
+
+@pytest.mark.req("R5.3")
+def test_validate_long_body_warns():
+    body = FILLED_BODY + "\n" + "y" * 6_100
+
+    assert _warnings(body) == ["body-long"]

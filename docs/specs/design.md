@@ -112,16 +112,7 @@ cairn/
 
 M2 thêm: `clipboard.py`, `integrations.py` (`init`, AGENTS.md).
 
-Hướng phụ thuộc (không vòng; kiểm bằng `test_imports.py`):
-
-```
-cli, hook ─► store, capture, drift, render, validate, secrets, resolve, doctor, assets, out
-capture ─► gitio, gh ─► proc
-drift ─► gitio
-store ─► document, timeutil
-render ─► document, capture(types), drift(types), assets
-mọi module ─► errors, constants
-```
+Hướng phụ thuộc giữa các module: nguồn duy nhất là bảng `ALLOWED` trong `tests/test_imports.py`; test chặn mọi import ngoài bảng (bỏ qua import chỉ dùng cho type hint) và chặn lõi thuần import vỏ I/O. Thêm cạnh mới là thay đổi thiết kế, sửa bảng trong cùng PR.
 
 Lõi thuần (không I/O): `document`, `validate`, `secrets`, `resolve`, `render`, phần tính toán của `drift` (nhận dữ liệu git đã lấy). Vỏ I/O: `proc`, `gitio`, `gh`, `store`, `out`, `cli`, `hook`.
 

@@ -44,6 +44,16 @@ Rồi mở một phiên Claude Code mới trong thư mục làm việc (git repo
 
 Nếu bước 1 bị hỏi quyền: ghi lại nguyên văn lệnh agent chạy; cần đổi `allowed-tools` (design §7.4). Nếu bước 4 không có gì: chạy `claude --debug` và tìm `SessionStart`; nếu hook dạng exec không chạy, đổi sang dạng chuỗi (design §7.3).
 
+## M1 — việc cần kiểm tay
+
+| Tiêu chí / task | Cách kiểm | Kết quả |
+|---|---|---|
+| R22.4 ngôn ngữ tài liệu | Spec và CODING_STANDARDS viết tiếng Việt; README, CHANGELOG, CONTRIBUTING, SECURITY tiếng Anh. | Đạt, 2026-11-09 |
+| R11.2 cài từ GitHub (P4) | Trên máy chưa cài: `claude plugin marketplace add sdc-ren/cairn`, `claude plugin install cairn@sdc-ren`, mở phiên mới. | Chờ |
+| R23.8 hook nén ngữ cảnh (E5) | Trong phiên có plugin, chạy `/compact`: bản tóm tắt giữ mục tiêu, quyết định, việc thất bại, bước tiếp theo; nếu chưa có handoff trong 2 giờ, agent nhắc đúng một dòng. | Chờ |
+| R24.4 chất lượng (F3, F2) | Chạy kịch bản [eval/scenario.md](eval/scenario.md) 3 lần, mỗi lần ≥ 7/8; nhật ký dưới ≥ 10 lần resume, ≥ 80% bước đầu đúng, trung bình ≤ 1 lần giải thích lại. | Chờ |
+| P4 S1/S2/S3 | S1 hai tài khoản; S2 commit tay sau handoff rồi resume (drift báo commit mới); S3 hai worktree. | Chờ |
+
 ## Nhật ký dùng thật (R24.3)
 
 | Ngày | ID | Nguồn (hook/skill) | Số lần giải thích lại | Bước đầu đúng (Y/N) | Thiếu thông tin gì | Hook gây phiền? |

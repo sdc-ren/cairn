@@ -21,7 +21,9 @@ _ASSIGNMENT = re.compile(
     r"\b(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)\b\s*[:=]\s*[\"']?([^\s\"']{8,})",
     re.IGNORECASE,
 )
-_PLACEHOLDER = re.compile(r"^(?:<.*>|\$\{.*\}|\*{3,}.*|x{3,}.*|changeme|example.*)$", re.IGNORECASE)
+_PLACEHOLDER = re.compile(
+    r"^(?:<.*>|\$\{.*\}|\*{3,}.*|x{3,}.*|changeme|example.*|\[REDACTED:.*)$", re.IGNORECASE
+)
 ASSIGNMENT = "assignment"
 
 
@@ -35,13 +37,35 @@ class Finding:
 
 def scan(text: str) -> list[Finding]:
     """Return one finding per line and pattern; assignments count only if nothing else matched."""
-    findings = []
+    findings: list[Finding] = []
     for number, line in enumerate(text.split("\n"), start=1):
         names = [name for name, pattern in _PATTERNS if pattern.search(line)]
         if not names and _has_real_assignment(line):
             names = [ASSIGNMENT]
         findings.extend(Finding(number, name) for name in names)
     return findings
+
+
+def redact(text: str) -> tuple[str, int]:
+    """Replace every secret value with ``[REDACTED:<pattern>]``; return the text and the count.
+
+    The rest of each line is kept so the handoff still reads naturally (R12.3).
+    """
+    count = 0
+
+    def assignment(match: re.Match[str]) -> str:
+        nonlocal count
+        value = match.group(1)
+        if _PLACEHOLDER.match(value):
+            return match.group(0)
+        count += 1
+        keep = match.group(0)[: match.start(1) - match.start(0)]
+        return f"{keep}[REDACTED:{ASSIGNMENT}]"
+
+    for name, pattern in _PATTERNS:
+        text, replaced = pattern.subn(f"[REDACTED:{name}]", text)
+        count += replaced
+    return _ASSIGNMENT.sub(assignment, text), count
 
 
 def _has_real_assignment(line: str) -> bool:

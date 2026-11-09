@@ -6,7 +6,7 @@ You are continuing work that a previous agent session handed off
 3. Tell the user, in the language they are using: the goal, what is done, open questions,
    and the exact next step you propose.
 4. If any drift line starts with "warn", wait for the user to confirm before editing code.
-{{others}}
+{{already}}{{others}}
 {{body}}
 
 ## Drift since handoff

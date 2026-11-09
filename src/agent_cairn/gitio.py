@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from agent_cairn import proc
@@ -48,9 +49,11 @@ def head(cwd: Path, *, timeout: float = GIT_TIMEOUT_SECONDS) -> tuple[str, str]:
     return sha, subject
 
 
-def status(cwd: Path) -> list[tuple[str, str]]:
+def status(cwd: Path, *, timeout: float = GIT_TIMEOUT_SECONDS) -> list[tuple[str, str]]:
     """Return (porcelain XY code, path) for each uncommitted change, renames by new path."""
-    records = _output(cwd, "status", "--porcelain=v1", "-z", "--untracked-files=normal")
+    records = _output(
+        cwd, "status", "--porcelain=v1", "-z", "--untracked-files=normal", timeout=timeout
+    )
     changes = []
     skip_next = False
     for record in records.split(FIELD_SEPARATOR):
@@ -93,6 +96,61 @@ def merge_base(cwd: Path, first: str, second: str, *, timeout: float) -> str | N
     """Return the merge base of two commits, or None if they share no history."""
     result = _run(cwd, "merge-base", first, second, timeout=timeout)
     return result.stdout.strip() if result.returncode == 0 else None
+
+
+@dataclass(frozen=True)
+class WorktreeEntry:
+    """One entry of ``git worktree list --porcelain``."""
+
+    path: Path
+    head: str
+    branch: str | None
+    prunable: bool
+
+
+def worktrees(cwd: Path) -> list[WorktreeEntry]:
+    """Return every worktree of the repository at ``cwd``, main worktree first (R4.1)."""
+    entries = []
+    for block in _output(cwd, "worktree", "list", "--porcelain").split("\n\n"):
+        fields = dict(line.partition(" ")[::2] for line in block.splitlines() if line)
+        if "worktree" in fields:
+            branch = fields.get("branch", "").removeprefix("refs/heads/") or None
+            prunable = "prunable" in fields
+            entries.append(
+                WorktreeEntry(Path(fields["worktree"]), fields.get("HEAD", ""), branch, prunable)
+            )
+    return entries
+
+
+def upstream(cwd: Path) -> str | None:
+    """Return the upstream of the current branch, such as ``origin/main``, or None."""
+    result = _run(cwd, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def ahead_behind(cwd: Path) -> tuple[int, int]:
+    """Return (ahead, behind) of HEAD relative to its upstream."""
+    behind, ahead = _output(cwd, "rev-list", "--left-right", "--count", "@{u}...HEAD").split()
+    return int(ahead), int(behind)
+
+
+def stash_count(cwd: Path) -> int:
+    """Return the number of stash entries."""
+    return len(_output(cwd, "stash", "list", "--format=%H").splitlines())
+
+
+def branch_tip(cwd: Path, branch: str, *, timeout: float = GIT_TIMEOUT_SECONDS) -> str | None:
+    """Return the commit ``refs/heads/<branch>`` points to, or None if it does not exist."""
+    result = _run(cwd, "rev-parse", "--verify", "-q", f"refs/heads/{branch}", timeout=timeout)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def version(cwd: Path) -> tuple[int, ...]:
+    """Return git's version as numbers, such as ``(2, 39, 5)`` (R18.3)."""
+    # "git version 2.39.5 (Apple Git-154)": the third word holds the number
+    words = _output(cwd, "--version").split()[2:3]
+    numbers = words[0].split(".") if words else []
+    return tuple(int(part) for part in numbers if part.isdigit())
 
 
 def _commits(text: str) -> list[tuple[str, str]]:

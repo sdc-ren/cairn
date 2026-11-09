@@ -78,7 +78,7 @@ def test_classify_missing_saved_head_warns():
 def test_classify_missing_worktree_warns():
     result = drift.classify(_facts(worktree_exists=False))
 
-    assert result.lines[0].text == "worktree /code/app no longer exists; drift not computed"
+    assert result.lines[0].text == "worktree /code/app no longer exists"
 
 
 def _saved_at_head(repo):
@@ -135,7 +135,9 @@ def test_compute_detects_garbage_collected_head(git_repo):
 
 def _with_resources(repo, resources):
     """A handoff saved at ``repo`` HEAD whose captured state lists ``resources``."""
-    captured = render.captured(capture.collect(repo), resources, captured_at=CREATED)
+    captured = render.captured(
+        capture.collect_repo(repo, use_gh=False), resources, captured_at=CREATED
+    )
     return make_handoff(
         worktree=str(repo), head=git(repo, "rev-parse", "HEAD"), captured_md=captured
     )
@@ -157,8 +159,8 @@ def test_compute_reports_new_commits_in_listed_worktree(workspace):
     commit(workspace / "wt", "work in wt")
 
     texts = [line.text for line in drift.compute(handoff, git_timeout=10).lines]
+    texts = texts[texts.index("worktree wt: 1 new commit(s) since handoff:") :]
 
-    assert texts[0] == "worktree wt: 1 new commit(s) since handoff:"
     assert texts[1].endswith("work in wt")
 
 
@@ -169,7 +171,7 @@ def test_compute_warns_when_worktree_or_pipeline_disappears(workspace):
     git(workspace, "worktree", "remove", "wt")
     (workspace / "pipe").rmdir()
 
-    lines = drift.compute(handoff, git_timeout=10).lines
+    lines = [line for line in drift.compute(handoff, git_timeout=10).lines if line.level == "warn"]
 
     assert [(line.level, line.text) for line in lines] == [
         ("warn", "worktree wt no longer exists"),
@@ -183,9 +185,11 @@ def test_compute_warns_when_listed_worktree_changes_branch(workspace):
     handoff = _with_resources(workspace, resources)
     git(workspace / "wt", "checkout", "-q", "-b", "other")
 
-    texts = [line.text for line in drift.compute(handoff, git_timeout=10).lines]
+    lines = drift.compute(handoff, git_timeout=10).lines
 
-    assert texts == ["worktree wt: now on other (was feat)"]
+    assert [line.text for line in lines if line.level == "warn"] == [
+        "worktree wt: now on other (was feat)"
+    ]
 
 
 @pytest.mark.req("R1.9")
@@ -196,3 +200,54 @@ def test_compute_outside_git_checks_only_resources(outside_repo):
 
     assert result.state == "none"
     assert [line.text for line in result.lines] == ["no drift: nothing changed since the handoff"]
+
+
+@pytest.mark.req("R10.5")
+def test_compute_groups_uncommitted_files(git_repo):
+    commit(git_repo, "base")
+    for name in ("still.txt", "cleaned.txt"):
+        (git_repo / name).write_text("x")
+    handoff = _with_resources(git_repo, ())
+    (git_repo / "cleaned.txt").unlink()
+    (git_repo / "new.txt").write_text("x")
+
+    texts = [line.text for line in drift.compute(handoff, git_timeout=10).lines]
+
+    assert texts == [
+        "1 file(s) still modified: still.txt",
+        "1 file(s) newly modified: new.txt",
+        "1 file(s) now clean: cleaned.txt",
+    ]
+
+
+@pytest.mark.req("R10.6")
+def test_compute_warns_when_worktree_changed_branch(git_repo):
+    commit(git_repo, "base")
+    handoff = _with_resources(git_repo, ())
+    git(git_repo, "checkout", "-q", "-b", "elsewhere")
+
+    lines = drift.compute(handoff, git_timeout=10).lines
+
+    assert (lines[0].level, lines[0].text) == (
+        "warn",
+        "worktree is now on elsewhere (handoff was on main)",
+    )
+
+
+@pytest.mark.req("R10.7")
+def test_compute_uses_branch_tip_when_worktree_is_gone(git_repo):
+    commit(git_repo, "base")
+    linked = git_repo.parent / "linked"
+    git(git_repo, "worktree", "add", "-q", "-b", "feat", str(linked))
+    handoff = make_handoff(
+        worktree=str(linked), branch="feat", head=git(linked, "rev-parse", "HEAD")
+    )
+    commit(linked, "more on feat")
+    git(git_repo, "worktree", "remove", str(linked))
+
+    result = drift.compute(handoff, git_timeout=10, fallback=git_repo)
+
+    texts = [line.text for line in result.lines]
+    assert result.state == "ahead"
+    assert texts[0] == f"worktree {linked} no longer exists"
+    assert texts[1] == "1 new commit(s) since handoff:"

@@ -1,5 +1,5 @@
 {
-  "description": "cairn: inject the open handoff of this branch at session start",
+  "description": "cairn: inject the open handoff at session start; keep reasoning through compaction",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,30 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
             "args": ["hook", "session-start"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
+            "args": ["hook", "post-compact"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
+            "args": ["hook", "pre-compact"],
             "timeout": 10
           }
         ]

@@ -17,7 +17,7 @@ and what comes next. Git keeps the code, not the reasoning. cairn keeps it.
 - **Local and plain.** Markdown files under `~/.cairn`, mode `0600`. No database, no network,
   no LLM calls, Python standard library only.
 
-> Status: **0.0.1, early preview.** It is used daily by its author. File format and commands
+> Status: **0.1.0 development preview.** It is used daily by its author. File format and commands
 > may still change before 0.1.
 
 ## Install
@@ -106,13 +106,19 @@ To pick explicitly:
 
 ```bash
 cairn list                    # handoffs of this project, newest first
-cairn list --status open      # only the ones nobody has resumed
-cairn show PROJ-268            # print the handoff file
+cairn list --status open      # only the ones nobody has resumed (--here, --branch, --json)
+cairn show PROJ-268           # print the handoff file (task, id, or id prefix)
 cairn show --path             # path of the best match for this directory
-cairn resume PROJ-268          # print it with the drift report and mark it resumed
+cairn resume PROJ-268         # print it with the drift report and mark it resumed
+cairn resume --peek --brief   # look without marking it resumed
+cairn capture                 # the git state cairn attaches to a handoff (--json)
+cairn template                # the body template agents fill in
+cairn doctor                  # check python, git, the Store, gh and the plugin
 ```
 
-Every command accepts `--dir PATH` to act on another directory.
+`cairn save` takes the body on stdin or `--file`, plus `--task`, `--title`, `--redact`
+(replace secrets instead of failing), `--dry-run` and `--no-gh`. Commands that use the Store
+accept `--dir PATH` to act on another directory, and every command has `-h`.
 
 ## How it works
 
@@ -132,7 +138,11 @@ session A                                   session B (new account, new day, new
 - **Store**: `~/.cairn/<project>-<hash>/`, one Markdown file per handoff. The hash keeps two
   folders with the same name apart.
 - **Lifecycle**: saving again for the same task (or branch) replaces the previous handoff.
-  Resuming never deletes; it marks the handoff `resumed` so it is not injected twice.
+  Resuming never deletes; it marks the handoff `resumed` so it is not injected twice. Resumed
+  handoffs are removed after 7 days and unclaimed ones after 30, the next time cairn writes.
+- **Compaction**: before Claude Code compacts the context, cairn asks the summary to keep the
+  goal, decisions, failed attempts and next steps; afterwards it reminds you in one line to save
+  a handoff if none was saved in the last two hours.
 
 ## Privacy and safety
 
@@ -150,6 +160,10 @@ session A                                   session B (new account, new day, new
 | `CAIRN_HOME` | `~/.cairn` | Root folder for all Stores |
 | `CAIRN_HOOK` | on | `off` disables the `SessionStart` hook |
 | `CAIRN_HOOK_MAX_AGE` | `7d` | Ignore open handoffs older than this (`d`, `h`, `m`) |
+| `CAIRN_KEEP_RESUMED` | `7d` | Remove resumed handoffs after this long |
+| `CAIRN_KEEP_OPEN` | `30d` | Remove handoffs nobody resumed after this long |
+| `CAIRN_NUDGE` | on | `off` disables the compaction hooks |
+| `CAIRN_NUDGE_WINDOW` | `2h` | No reminder after compaction if a handoff is this recent |
 | `CAIRN_AGENT` | `unknown` | Agent name recorded when `--agent` is not given |
 | `CAIRN_STORE` | | Use this exact folder as the Store (tests, debugging) |
 
@@ -164,8 +178,9 @@ rm -rf ~/.cairn        # deletes every saved handoff
 
 ```bash
 make setup     # Python 3.9 virtualenv with dev tools
-make lint      # ruff
-make test      # pytest
+make lint      # ruff, mypy --strict, duplicate and dead code, module size
+make test      # pytest (make cov for coverage, make reqcov for requirement coverage)
+make gen       # regenerate skills/ from src/agent_cairn/assets
 ```
 
 The design is spec-driven: requirements, design decisions and the task plan live in

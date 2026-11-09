@@ -28,11 +28,13 @@ jobs:
       - name: Install
         run: python -m pip install -e '.[dev]'
       - name: Lint
-        run: |
-          ruff check .
-          ruff format --check .
-      - name: Test
-        run: pytest -q
+        run: make lint BIN="$(dirname "$(which python)")"
+      - name: Test with coverage
+        run: pytest -q --cov
+      - name: Every automated requirement has a test
+        run: python scripts/req_coverage.py --level M1 --automated-only
+      - name: Generated plugin files are up to date
+        run: python scripts/gen_plugin.py --check
       - name: Package builds and installs
         run: |
           python -m pip install build

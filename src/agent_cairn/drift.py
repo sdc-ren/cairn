@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 INFO = "info"
 NO_DRIFT = "no drift: nothing changed since the handoff"
+FILE_LIST = 5
 WARN = "warn"
 
 
@@ -56,35 +57,71 @@ class Drift:
     lines: tuple[DriftLine, ...]
 
 
-def compute(handoff: Handoff, *, git_timeout: float) -> Drift:
+def compute(handoff: Handoff, *, git_timeout: float, fallback: Path | None = None) -> Drift:
     """Report what changed since ``handoff``: its repository, then each Workspace resource.
 
-    Never calls ``gh``. Outside git only Workspace resources are checked (R1.9, R10.10).
+    ``fallback`` is a checkout of the same repository used when the saved worktree is gone
+    (R10.7). Never calls ``gh``. Outside git only Workspace resources are checked (R1.9, R10.10).
     """
-    main = _main_drift(handoff, git_timeout)
-    resources = capture.resources_from_json(document.captured_json(handoff.captured_md))
+    main = _main_drift(handoff, git_timeout, fallback)
+    payload = document.captured_json(handoff.captured_md)
+    resources = capture.resources_from_json(payload)
     main_path = Path(str(handoff.meta.get("worktree", ""))).resolve()
     extra = _resource_lines(
         [r for r in resources if Path(r.location).resolve() != main_path], git_timeout
     )
-    lines = [line for line in main.lines if line.text != NO_DRIFT] + extra
+    files = _file_lines(main_path, capture.changes_from_json(payload), git_timeout)
+    lines = [line for line in main.lines if line.text != NO_DRIFT] + files + extra
     return replace(main, lines=tuple(lines) or (DriftLine(INFO, NO_DRIFT),))
 
 
-def _main_drift(handoff: Handoff, git_timeout: float) -> Drift:
+def _main_drift(handoff: Handoff, git_timeout: float, fallback: Path | None) -> Drift:
     worktree = str(handoff.meta.get("worktree", ""))
     saved = str(handoff.meta.get("head", ""))
+    branch = str(handoff.meta.get("branch", ""))
     if not saved:
         return Drift("none", (), 0, None, ())
     path = Path(worktree)
-    if not worktree or not path.is_dir():
-        return classify(_unreachable(worktree, saved))
-    return classify(_facts(path, saved, git_timeout))
+    if worktree and path.is_dir():
+        report = classify(_facts(path, saved, git_timeout))
+        current = gitio.current_branch(path)
+        if branch and current != branch:
+            text = f"worktree is now on {current or '(detached)'} (handoff was on {branch})"
+            return replace(report, lines=(DriftLine(WARN, text), *report.lines))
+        return report
+    missing = classify(_unreachable(worktree, saved))
+    tip = gitio.branch_tip(fallback, branch, timeout=git_timeout) if fallback and branch else None
+    if fallback is None or tip is None:
+        return missing
+    report = classify(replace(_facts(fallback, saved, git_timeout, target=tip), worktree=worktree))
+    return replace(report, lines=(*missing.lines[:1], *report.lines))
 
 
-def _facts(path: Path, saved: str, git_timeout: float) -> Facts:
-    """Gather git facts comparing ``saved`` with the current HEAD of the checkout at ``path``."""
-    target, _ = gitio.head(path, timeout=git_timeout)
+def _file_lines(path: Path, saved: tuple[str, ...] | None, git_timeout: float) -> list[DriftLine]:
+    """Compare uncommitted paths at save time with now (R10.5); info lines only."""
+    if saved is None or not path.is_dir():
+        return []
+    try:
+        now = {name for _, name in gitio.status(path, timeout=git_timeout)}
+    except CairnError:
+        return []
+    before = set(saved)
+    groups = (
+        ("still modified", before & now),
+        ("newly modified", now - before),
+        ("now clean", before - now),
+    )
+    return [
+        DriftLine(INFO, f"{len(names)} file(s) {label}: {', '.join(sorted(names)[:FILE_LIST])}")
+        for label, names in groups
+        if names
+    ]
+
+
+def _facts(path: Path, saved: str, git_timeout: float, *, target: str | None = None) -> Facts:
+    """Gather git facts comparing ``saved`` with ``target`` (default: HEAD of ``path``)."""
+    if target is None:
+        target, _ = gitio.head(path, timeout=git_timeout)
     exists = gitio.commit_exists(path, saved, timeout=git_timeout)
     moved = exists and saved != target
     ancestor = moved and gitio.is_ancestor(path, saved, target, timeout=git_timeout)
@@ -159,7 +196,7 @@ def _unreachable(worktree: str, saved: str) -> Facts:
 def classify(facts: Facts) -> Drift:
     """Turn ``facts`` into a drift report (R10.1-R10.4, R10.8)."""
     if not facts.worktree_exists:
-        text = f"worktree {facts.worktree} no longer exists; drift not computed"
+        text = f"worktree {facts.worktree} no longer exists"
         return _report("unknown", facts, [DriftLine(WARN, text)])
     if not facts.saved_exists:
         text = f"saved head {facts.saved[:SHORT_SHA_CHARS]} no longer exists"

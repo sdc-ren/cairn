@@ -9,15 +9,22 @@ from agent_cairn import document
 from agent_cairn.constants import (
     CAPTURED_MARKER,
     EMPTY_PLACEHOLDERS,
+    ERROR,
+    LONG_BODY_CHARS,
     MAX_BODY_CHARS,
     NEXT_STEPS_SECTION,
+    RECOMMENDED_SECTIONS,
     REQUIRED_SECTIONS,
+    RULE_BODY_LONG,
     RULE_BODY_TOO_LONG,
     RULE_EMPTY_SECTION,
+    RULE_MISSING_RECOMMENDED,
     RULE_MISSING_SECTION,
     RULE_MISSING_TITLE,
     RULE_NEXT_STEPS_NO_ITEMS,
     RULE_RESERVED_MARKER,
+    SECTION_ALIASES,
+    WARNING,
 )
 
 _LIST_ITEM = re.compile(r"^\s*(?:[-*]|\d+\.)\s+\S", re.MULTILINE)
@@ -26,11 +33,15 @@ _PLACEHOLDER_TITLE = re.compile(r"^<[^>]*>$")
 
 @dataclass(frozen=True)
 class Violation:
-    """One broken rule, printed as ``line <n>: <rule>: <message>`` so an agent can fix it."""
+    """One broken rule, printed as ``line <n>: <rule>: <message>`` so an agent can fix it.
+
+    ``level`` is ``error`` (the body is rejected) or ``warning`` (saved anyway, R5.3).
+    """
 
     rule: str
     message: str
     line: int | None = None
+    level: str = ERROR
 
     def __str__(self) -> str:
         """Format as R5.4; the line prefix is left out when no line applies."""
@@ -39,8 +50,36 @@ class Violation:
 
 
 def validate(body: str) -> list[Violation]:
-    """Return every rule ``body`` breaks; an empty list means it can be saved."""
-    return [*_check_size_and_marker(body), *_check_title(body), *_check_sections(body)]
+    """Return every rule ``body`` breaks; it can be saved when none has level ``error``."""
+    return [
+        *_check_size_and_marker(body),
+        *_check_title(body),
+        *_check_sections(body),
+        *_check_recommended(body),
+    ]
+
+
+def errors(violations: list[Violation]) -> list[Violation]:
+    """Return the violations that block saving."""
+    return [violation for violation in violations if violation.level == ERROR]
+
+
+def _check_recommended(body: str) -> list[Violation]:
+    present = {_canonical(section.name) for section in document.sections(body)}
+    found = [
+        Violation(RULE_MISSING_RECOMMENDED, f"consider adding '## {name}'", level=WARNING)
+        for name in RECOMMENDED_SECTIONS
+        if name.casefold() not in present
+    ]
+    if len(body) > LONG_BODY_CHARS:
+        message = f"body has {len(body)} characters; above {LONG_BODY_CHARS} it gets hard to read"
+        found.append(Violation(RULE_BODY_LONG, message, level=WARNING))
+    return found
+
+
+def _canonical(name: str) -> str:
+    folded = name.casefold()
+    return SECTION_ALIASES.get(folded, folded)
 
 
 def _check_size_and_marker(body: str) -> list[Violation]:

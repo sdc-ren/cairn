@@ -1,0 +1,13 @@
+{
+  "threshold": 7,
+  "facts": [
+    {"name": "goal", "patterns": ["(?i)bulk discount", "(?i)10\\s*%.*(5|five)"]},
+    {"name": "decision-location", "patterns": ["(?i)mobile"]},
+    {"name": "decision-rounding", "patterns": ["(?i)round_half_up", "(?i)half[ -]up"]},
+    {"name": "failed-api-rounding", "patterns": ["(?i)double[ -]?round"]},
+    {"name": "next-discount-branch", "patterns": ["(?i)total\\(\\)"]},
+    {"name": "next-tests", "patterns": ["(?i)test_cart"]},
+    {"name": "next-run-pytest", "patterns": ["(?i)\\bpytest\\b"]},
+    {"name": "open-question-tax", "patterns": ["(?i)tax"]}
+  ]
+}

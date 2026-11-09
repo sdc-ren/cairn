@@ -64,3 +64,101 @@ def test_only_out_calls_print():
         )
 
     assert _modules_using(is_print) == {"out.py"}
+
+
+# Allowed internal imports per module (design §3). Adding an edge is a design change.
+ALLOWED = {
+    "__init__": set(),
+    "__main__": {"cli"},
+    "assets": set(),
+    "capture": {"constants", "errors", "gh", "gitio"},
+    "cli": {
+        "commands",
+        "constants",
+        "doctor",
+        "errors",
+        "gitio",
+        "hook",
+        "out",
+        "render",
+        "timeutil",
+    },
+    "commands": {
+        "assets",
+        "capture",
+        "constants",
+        "document",
+        "drift",
+        "errors",
+        "gitio",
+        "out",
+        "render",
+        "resolve",
+        "secrets",
+        "store",
+        "timeutil",
+        "validate",
+    },
+    "constants": set(),
+    "doctor": {"constants", "errors", "gitio", "proc", "store"},
+    "document": {"constants", "errors"},
+    "drift": {"capture", "constants", "document", "errors", "gitio"},
+    "errors": set(),
+    "gh": {"constants", "errors", "proc"},
+    "gitio": {"constants", "errors", "proc"},
+    "hook": {"assets", "commands", "constants", "out", "store", "timeutil"},
+    "out": set(),
+    "proc": {"errors"},
+    "render": {"assets", "capture", "constants", "document", "timeutil"},
+    "resolve": {"constants", "document", "errors"},
+    "secrets": set(),
+    "store": {"constants", "document", "errors", "gitio", "out", "timeutil"},
+    "timeutil": set(),
+    "validate": {"constants", "document"},
+}
+PURE_CORE = {"document", "validate", "secrets", "resolve", "render", "timeutil"}
+IO_SHELL = {"proc", "gitio", "gh", "store", "out", "cli", "hook", "commands", "doctor"}
+
+
+def _runtime_nodes(tree):
+    """Yield every node except those under ``if TYPE_CHECKING:`` (type hints only)."""
+    for statement in tree.body:
+        is_type_block = (
+            isinstance(statement, ast.If)
+            and isinstance(statement.test, ast.Name)
+            and statement.test.id == "TYPE_CHECKING"
+        )
+        if not is_type_block:
+            yield from ast.walk(statement)
+
+
+def _internal_imports(path):
+    found = set()
+    for node in _runtime_nodes(_tree(path)):
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and node.module.startswith("agent_cairn")
+        ):
+            if node.module == "agent_cairn":
+                found |= {alias.name for alias in node.names if alias.name != "__version__"}
+            else:
+                found.add(node.module.split(".")[1])
+    return found
+
+
+@pytest.mark.req("R18.1")
+def test_internal_imports_follow_the_design_graph():
+    graph = {path.stem: _internal_imports(path) for path in MODULES if path.parent == PACKAGE}
+
+    unexpected = {
+        name: deps - ALLOWED[name] for name, deps in graph.items() if deps - ALLOWED[name]
+    }
+
+    assert set(graph) == set(ALLOWED)
+    assert unexpected == {}
+
+
+def test_pure_core_never_imports_the_io_shell():
+    for name in PURE_CORE:
+        assert not ALLOWED[name] & IO_SHELL, name

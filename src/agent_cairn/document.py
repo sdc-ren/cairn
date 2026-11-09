@@ -118,6 +118,16 @@ def sections(body: str) -> list[Section]:
     return found
 
 
+def with_title(body: str, text: str) -> str:
+    """Return ``body`` with its ``# `` title set to ``text``, added if missing (R5.5)."""
+    heading = title(body)
+    lines = body.split("\n")
+    if heading is None:
+        return f"{TITLE_PREFIX}{text}\n\n{body}"
+    lines[heading[0] - 1] = f"{TITLE_PREFIX}{text}"
+    return "\n".join(lines)
+
+
 def strip_comments(text: str) -> str:
     """Remove ``<!-- -->`` hints, which never count as content."""
     return _HTML_COMMENT.sub("", text)

@@ -36,6 +36,13 @@ RULE_EMPTY_SECTION = "empty-section"
 RULE_NEXT_STEPS_NO_ITEMS = "next-steps-no-items"
 RULE_BODY_TOO_LONG = "body-too-long"
 RULE_RESERVED_MARKER = "reserved-marker"
+RULE_MISSING_RECOMMENDED = "missing-recommended"
+RULE_BODY_LONG = "body-long"
+LONG_BODY_CHARS = 6_000
+RECOMMENDED_SECTIONS = ("Decisions", "Tried / didn't work", "Open questions", "Key files")
+SECTION_ALIASES = {"tried": "tried / didn't work", "didn't work": "tried / didn't work"}
+ERROR = "error"
+WARNING = "warning"
 
 # Store layout, see R1
 HOME_ENV = "CAIRN_HOME"
@@ -48,6 +55,11 @@ AGENT_ENV = "CAIRN_AGENT"
 UNKNOWN_AGENT = "unknown"
 SCHEMA_VERSION = 1
 STORE_ENV = "CAIRN_STORE"
+KEEP_RESUMED_ENV = "CAIRN_KEEP_RESUMED"
+KEEP_RESUMED_DEFAULT = "7d"
+KEEP_OPEN_ENV = "CAIRN_KEEP_OPEN"
+KEEP_OPEN_DEFAULT = "30d"
+MIN_ID_PREFIX = 4
 DIR_MODE = 0o700
 FILE_MODE = 0o600
 SLUG_MAX_CHARS = 40
@@ -82,3 +94,20 @@ CAPTURED_JSON_CLOSE = " -->"
 LIST_DEFAULT_LIMIT = 20
 LIST_TITLE_MAX_CHARS = 60
 NO_HANDOFFS_MESSAGE = "no handoffs yet"
+
+# GitHub CLI, see R4.4
+GH_TIMEOUT_SECONDS = 5
+GH_LIMIT = 100
+PRS_OK = "ok"
+PRS_UNAVAILABLE = "unavailable"
+PRS_SKIPPED = "skipped"
+TEMPLATE_ASSET = "template.md"
+
+# Doctor and compaction hooks, see R15 and R23
+MIN_PYTHON = (3, 9)
+MIN_GIT_VERSION = (2, 31)
+NUDGE_ENV = "CAIRN_NUDGE"
+NUDGE_WINDOW_ENV = "CAIRN_NUDGE_WINDOW"
+NUDGE_WINDOW_DEFAULT = "2h"
+PRECOMPACT_ASSET = "precompact.md"
+NUDGE_ASSET = "nudge.md"

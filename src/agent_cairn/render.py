@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 from agent_cairn import __version__, assets, capture, document, timeutil
 from agent_cairn.constants import (
     CAPTURED_HEADING,
     LIST_TITLE_MAX_CHARS,
+    PRS_UNAVAILABLE,
     RESOURCE_WORKTREE,
     SHORT_SHA_CHARS,
 )
@@ -16,47 +19,80 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from agent_cairn.capture import Resource, WorktreeState
+    from agent_cairn.capture import OtherWorktree, RepoState, Resource, WorktreeState
     from agent_cairn.document import Handoff
     from agent_cairn.drift import Drift
+    from agent_cairn.gh import PullRequest
 
 PREAMBLE_ASSET = "preamble.md"
 
 
-def captured(
-    state: WorktreeState, resources: tuple[Resource, ...], *, captured_at: datetime
-) -> str:
-    """Render the Captured state: working directory, Workspace resources, machine-readable block."""
+def captured(repo: RepoState, resources: tuple[Resource, ...], *, captured_at: datetime) -> str:
+    """Render the Captured state: current worktree, other worktrees, Workspace, JSON block."""
     lines = [
         CAPTURED_HEADING,
         "",
         f"Captured at {timeutil.to_iso(captured_at)} by cairn {__version__}",
         "",
-        *_directory_lines(state),
+        *repo_lines(repo),
     ]
     if resources:
         lines += ["", "### Workspace", *(_resource_line(r) for r in resources)]
-    lines += ["", document.captured_json_line(capture.resources_json(resources))]
+    lines += ["", document.captured_json_line(capture.captured_json(repo, resources))]
     return "\n".join(lines)
 
 
-def _directory_lines(state: WorktreeState) -> list[str]:
+def repo_lines(repo: RepoState) -> list[str]:
+    """Render the current worktree in full and the others as a table (R4.2, R5.7)."""
+    state = repo.current
     if not state.is_git:
         return [f"### Directory (current): {state.path}", "- not a git repository"]
+    lines = [f"### Worktree (current): {state.path}", *_current_lines(state)]
+    if repo.prs.status == PRS_UNAVAILABLE:
+        lines.append(f"- PRs: unavailable ({repo.prs.error})")
+    if repo.others:
+        lines += [
+            "",
+            "### Other worktrees",
+            "| Branch | Path | Uncommitted | PR |",
+            "|---|---|---|---|",
+        ]
+        lines += [_other_row(other) for other in repo.others]
+    return lines
+
+
+def _current_lines(state: WorktreeState) -> list[str]:
     branch = state.branch or f"(detached at {state.head[:SHORT_SHA_CHARS]})"
+    if state.upstream:
+        branch += f" → {state.upstream} (ahead {state.ahead}, behind {state.behind})"
     lines = [
-        f"### Worktree (current): {state.path}",
         f"- Branch: {branch}",
         f"- HEAD: {state.head[:SHORT_SHA_CHARS]} {state.head_subject}",
-        f"- Uncommitted ({state.changes_total}):",
-        *(f"  - `{change.xy}` {change.path}" for change in state.changes),
+        *(f"- PR: {_pr_text(pr)}" for pr in state.prs),
     ]
+    if state.stashes is not None:
+        lines.append(f"- Stashes: {state.stashes}")
+    lines.append(f"- Uncommitted ({state.changes_total}):")
+    lines += [f"  - `{change.xy}` {change.path}" for change in state.changes]
     hidden = state.changes_total - len(state.changes)
     if hidden:
         lines.append(f"  - … and {hidden} more")
     lines.append("- Recent commits:")
-    lines.extend(f"  - {c.sha} {c.subject}" for c in state.recent_commits)
+    lines += [f"  - {c.sha} {c.subject}" for c in state.recent_commits]
+    lines += [f"- error: {error}" for error in state.errors]
     return lines
+
+
+def _other_row(other: OtherWorktree) -> str:
+    branch = other.branch or f"(detached at {other.head[:SHORT_SHA_CHARS]})"
+    changes = "error" if other.changes_total is None else str(other.changes_total)
+    prs = ", ".join(f"#{pr.number}" for pr in other.prs) or "—"
+    return f"| {branch} | {other.path} | {changes} | {prs} |"
+
+
+def _pr_text(pr: PullRequest) -> str:
+    draft = " (draft)" if pr.draft else ""
+    return f'#{pr.number} "{pr.title}"{draft} {pr.url}'
 
 
 def _resource_line(resource: Resource) -> str:
@@ -78,6 +114,10 @@ def resume(handoff: Handoff, drift: Drift, *, brief: bool, others: Sequence[Hand
     """
     meta = handoff.meta
     captured = "" if brief else f"\n{document.without_captured_json(handoff.captured_md)}\n"
+    count = int(meta.get("resume_count", 0))
+    already = (
+        f"Note: already resumed {count} time(s), last {meta.get('resumed_at')}.\n" if count else ""
+    )
     return assets.fill(
         PREAMBLE_ASSET,
         id=str(meta.get("id", "")),
@@ -88,6 +128,7 @@ def resume(handoff: Handoff, drift: Drift, *, brief: bool, others: Sequence[Hand
         drift="\n".join(f"- {line.level}: {line.text}" for line in drift.lines),
         captured=captured,
         others=_others_block(others),
+        already=already,
     ).rstrip("\n")
 
 
@@ -125,3 +166,22 @@ def _table_row(handoff: Handoff, now: datetime) -> tuple[str, str, str, str, str
         timeutil.age(created, now),
         title,
     )
+
+
+def resume_json(handoff: Handoff, drift: Drift) -> str:
+    """Render ``resume --json``: the handoff and its drift report (design §4.4)."""
+    payload = {
+        "handoff": {
+            "meta": dict(handoff.meta),
+            "body": handoff.body,
+            "path": str(handoff.path) if handoff.path else None,
+        },
+        "drift": {
+            "state": drift.state,
+            "new_commits": [asdict(c) for c in drift.new_commits],
+            "new_commits_total": drift.new_commits_total,
+            "merge_base": drift.merge_base,
+            "lines": [asdict(line) for line in drift.lines],
+        },
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)

@@ -1,0 +1,14 @@
+{
+  "handoff": {
+    "name": "handoff",
+    "description": "Save a handoff of the current task so a new session (another account, another agent, or tomorrow) can continue without the user re-explaining. Use when the user wants to stop, switch account, is running out of usage or quota, or says \"handoff\", \"save context\", \"wrap up for the next session\", \"bàn giao\", \"lưu ngữ cảnh\", \"sắp hết quota\", \"đổi tài khoản\", \"lưu lại để làm tiếp\".",
+    "argument-hint": "[title]",
+    "allowed-tools": "Bash(cairn save *)"
+  },
+  "resume": {
+    "name": "resume",
+    "description": "Continue work from a cairn handoff of this project, or list the open ones to pick from. Use when the user wants to pick up previous work or asks what is unfinished: \"resume\", \"continue where we left off\", \"resume PROJ-268\", \"what tasks are open\", \"tiếp tục việc hôm qua\", \"làm tiếp\", \"đọc handoff\", \"còn task nào đang dở\".",
+    "argument-hint": "[task or handoff id]",
+    "allowed-tools": "Bash(cairn resume *) Bash(cairn list *)"
+  }
+}
