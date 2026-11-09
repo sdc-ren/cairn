@@ -50,7 +50,7 @@ Nếu bước 1 bị hỏi quyền: ghi lại nguyên văn lệnh agent chạy; 
 |---|---|---|
 | R22.4 ngôn ngữ tài liệu | Spec và CODING_STANDARDS viết tiếng Việt; README, CHANGELOG, CONTRIBUTING, SECURITY tiếng Anh. | Đạt, 2026-11-09 |
 | R11.2 cài từ GitHub (P4) | Trên máy chưa cài: `claude plugin marketplace add sdc-ren/cairn`, `claude plugin install cairn@sdc-ren`, mở phiên mới. | Chờ |
-| R23.8 hook nén ngữ cảnh (E5) | Trong phiên có plugin, chạy `/compact`: bản tóm tắt giữ mục tiêu, quyết định, việc thất bại, bước tiếp theo; nếu chưa có handoff trong 2 giờ, agent nhắc đúng một dòng. | Chờ |
+| R23.8 hook nén ngữ cảnh (E5) | Trong phiên có plugin, chạy `/compact`: bản tóm tắt giữ mục tiêu, quyết định, việc thất bại, bước tiếp theo; nếu chưa có handoff trong 2 giờ, người dùng thấy một dòng nhắc. | Đạt, 2026-11-09: `PreCompact` chạy dạng exec, chỉ dẫn được dùng cho bản tóm tắt (handoff viết sau khi nén đạt 8/8, `/tmp/cairn-eval`). Lời nhắc qua `additionalContext` không hiện vì chỉ tới agent ở lượt sau; chuyển sang `systemMessage` và thử lại ở `/tmp/cairn-eval2`: dòng nhắc hiện ngay sau `/compact`. Hook không chặn compaction nên R23 giữ ở M1. |
 | R24.4 chất lượng (F3, F2) | Chạy kịch bản [eval/scenario.md](eval/scenario.md) 3 lần, mỗi lần ≥ 7/8; nhật ký dưới ≥ 10 lần resume, ≥ 80% bước đầu đúng, trung bình ≤ 1 lần giải thích lại. | Chờ |
 | P4 S1/S2/S3 | S1 hai tài khoản; S2 commit tay sau handoff rồi resume (drift báo commit mới); S3 hai worktree. | Chờ |
 

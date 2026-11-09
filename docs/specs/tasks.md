@@ -203,7 +203,7 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
   - Hook cũng dọn bản hết hạn (R14.4); dòng `removed …` chỉ ra stderr, stdout vẫn đúng JSON.
   - Refs: R13.1, R13.3–R13.8, R14.4, R14.5
 
-- [ ] **E5. `hook pre-compact` + `hook post-compact`** — code, asset, `hooks.json` và test xong; còn chạy `/compact` trên phiên thật (R23.8)
+- [x] **E5. `hook pre-compact` + `hook post-compact`** — đã kiểm `/compact` trên phiên thật (verification.md)
   - Theo design §5.6; Asset `precompact.md`, `nudge.md`; thêm hai entry vào `hooks.json` (design §7.3).
   - Kiểm trên Claude Code thật: chạy `/compact` trong phiên có plugin; xác nhận bản tóm tắt giữ các mục ở R23.2 và agent nhắc đúng một dòng; ghi vào `verification.md`. Không chạy được → áp dụng R23.8.
   - **Done khi:** test design §10 (hàng "Hook nén ngữ cảnh") xanh; bằng chứng thật đã ghi.
