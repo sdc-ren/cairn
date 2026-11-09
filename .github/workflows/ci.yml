@@ -49,3 +49,7 @@ jobs:
           "$(python -m pipx environment --value PIPX_BIN_DIR)/cairn" version
           uv tool install dist/*.whl --force
           "$(uv tool dir --bin)/cairn" version
+      - name: npm package runs with npx
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP" && npx --yes --package ./agent-cairn-*.tgz cairn version

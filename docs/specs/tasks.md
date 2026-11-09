@@ -263,6 +263,7 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 - [x] **G6. `rm`.** Refs: R14.9
 - [x] **G7. `resume --copy` + `clipboard.py`.** Refs: R9.9
 - [x] **G8. `doctor` mở rộng** — clipboard, cài đặt pipx. Refs: R15.1
+- [x] **G10. Chạy không cần cài: `npx` và `uvx`** — `package.json` (version đồng bộ qua `gen_plugin.py`), launcher chạy qua symlink, CI chạy `npm pack` + `npx`. Refs: R18.8, R18.9
 - [ ] **G9. Phát hành 0.2.0** — kiểm S4 với một agent không phải Claude; publish marketplace công khai. — chờ thử với agent khác (Codex, Cursor…) qua `cairn prompt` hoặc AGENTS.md
 
 ## Thứ tự phụ thuộc

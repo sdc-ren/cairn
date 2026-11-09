@@ -1,0 +1,34 @@
+{
+  "name": "agent-cairn",
+  "version": "0.2.0-dev.0",
+  "description": "Hand off AI agent work between Claude Code sessions, accounts and agents without re-explaining. Needs python3 3.9+.",
+  "license": "MIT",
+  "author": "sondc",
+  "homepage": "https://github.com/sdc-ren/cairn#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdc-ren/cairn.git"
+  },
+  "bugs": "https://github.com/sdc-ren/cairn/issues",
+  "keywords": [
+    "claude-code",
+    "ai-agents",
+    "handoff",
+    "context",
+    "cli"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "bin": {
+    "cairn": "bin/cairn"
+  },
+  "files": [
+    "bin/cairn",
+    "src/agent_cairn/**/*.py",
+    "src/agent_cairn/assets/*",
+    "README.md",
+    "LICENSE"
+  ]
+}

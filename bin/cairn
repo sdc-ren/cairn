@@ -1,7 +1,16 @@
 #!/bin/sh
 # cairn launcher: runs the bundled package with the system python3 (stdlib only, no install).
 set -eu
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+# Follow symlinks (npm's node_modules/.bin, a link on PATH) to find the real checkout.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in
+    /*) self=$link ;;
+    *) self=$(dirname -- "$self")/$link ;;
+  esac
+done
+root=$(CDPATH= cd -- "$(dirname -- "$self")/.." && pwd -P)
 py=${CAIRN_PYTHON:-python3}
 if command -v "$py" >/dev/null 2>&1 \
    && "$py" -c 'import sys; sys.exit(sys.version_info < (3, 9))' 2>/dev/null; then

@@ -175,3 +175,17 @@ def test_launcher_rejects_old_python(tmp_path):
 
     assert done.returncode == 1
     assert done.stderr == "cairn: python3 >= 3.9 is required\n"
+
+
+@pytest.mark.req("R11.3")
+@pytest.mark.req("R18.8")
+def test_launcher_works_through_symlinks(tmp_path):
+    direct = tmp_path / "cairn"
+    direct.symlink_to(LAUNCHER)
+    nested = tmp_path / "a" / "b" / "cairn"
+    nested.parent.mkdir(parents=True)
+    nested.symlink_to("../../cairn")
+
+    for link in (direct, nested):
+        done = subprocess.run([str(link), "version"], capture_output=True, text=True, check=False)
+        assert (done.returncode, done.stdout) == (0, f"cairn {__version__}\n")

@@ -11,7 +11,7 @@ from datetime import timedelta
 import pytest
 from conftest import CREATED, FILLED_BODY, ROOT_DIR, add_worktree, commit, make_handoff
 
-from agent_cairn import out, store
+from agent_cairn import __version__, out, store
 from agent_cairn.cli import main
 
 SCRIPTS = ROOT_DIR / "scripts"
@@ -283,3 +283,24 @@ def test_release_workflow_publishes_with_trusted_publishing():
     assert "id-token: write" in release
     assert "pypa/gh-action-pypi-publish" in release
     assert 'test "v$version" = "$GITHUB_REF_NAME"' in release
+
+
+@pytest.mark.req("R18.9")
+def test_npm_package_exposes_the_launcher_with_the_package_version():
+    package = json.loads((ROOT_DIR / "package.json").read_text())
+
+    assert package["bin"] == {"cairn": "bin/cairn"}
+    assert "src/agent_cairn/assets/*" in package["files"]
+    assert package["version"].replace("-dev.", ".dev") == __version__
+    assert "npx --yes --package" in CI
+
+
+@pytest.mark.parametrize(
+    ("python", "npm"),
+    [("0.2.0", "0.2.0"), ("0.2.0.dev0", "0.2.0-dev.0"), ("1.0.0rc2", "1.0.0-rc.2")],
+)
+def test_npm_version_follows_semver(python, npm):
+    sys.path.insert(0, str(SCRIPTS))
+    import gen_plugin  # noqa: PLC0415 - script module, not a package
+
+    assert gen_plugin.npm_version(python) == npm

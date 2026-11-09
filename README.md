@@ -41,11 +41,13 @@ Requirements: macOS or Linux, `git` 2.31+, `python3` 3.9+ (the one shipped with 
 |---|---|---|
 | Claude Code (recommended) | `claude plugin marketplace add sdc-ren/cairn`<br>`claude plugin install cairn@sdc-ren` | Skills `/cairn:handoff`, `/cairn:resume`, the hooks, and the CLI inside Claude |
 | A terminal | `pipx install git+https://github.com/sdc-ren/cairn` (or `uv tool install git+https://github.com/sdc-ren/cairn`) | The `cairn` command everywhere |
+| A terminal, nothing installed | `uvx --from git+https://github.com/sdc-ren/cairn cairn <command>`<br>or `npx github:sdc-ren/cairn <command>` | A one-off run, e.g. `npx github:sdc-ren/cairn list` |
 | Claude Code without the plugin | the terminal install, then `cairn init` | Skills `/cairn-handoff`, `/cairn-resume` |
 | Codex, Cursor or another agent | the terminal install, then `cairn init --agent agents-md` | Instructions in `AGENTS.md` |
 
 After installing the plugin, start a new Claude Code session. To try a local checkout instead,
-use `claude plugin marketplace add /path/to/cairn`, or put its `bin/cairn` on your `PATH`.
+use `claude plugin marketplace add /path/to/cairn`, or link its `bin/cairn` into your `PATH`.
+Every route, `npx` included, runs the same Python code, so `python3` 3.9+ must be installed.
 
 ## Quick start
 

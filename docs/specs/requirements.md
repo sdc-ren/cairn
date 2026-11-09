@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Trạng thái | Draft — chờ duyệt |
-| Phiên bản spec | 1.8 |
+| Phiên bản spec | 1.9 |
 | Ngày | 2026-11-09 |
 | Tài liệu liên quan | [design.md](design.md) · [tasks.md](tasks.md) · [CODING_STANDARDS](../CODING_STANDARDS.md) |
 
@@ -332,6 +332,8 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 5. Layout `src/agent_cairn/`, chạy được bằng `python3 -m agent_cairn` khi `src/` ở `PYTHONPATH`. `[M1]`
 6. `pyproject.toml` khai báo package `agent-cairn`, entry point `cairn = agent_cairn.cli:main`; cài được bằng `pipx install agent-cairn` và `uv tool install agent-cairn`. `[M2]`
 7. Không build step: mã trong plugin chính là mã trong `src/`. `[M1]`
+8. Launcher `bin/cairn` PHẢI chạy đúng khi được gọi qua symlink (npm `node_modules/.bin`, link trên `PATH`). `[M2]`
+9. Repo PHẢI có `package.json` (gói `agent-cairn`, `bin: cairn → bin/cairn`, version đồng bộ từ `__version__` qua `gen_plugin.py`) để chạy `npx github:sdc-ren/cairn …` không cần publish; đăng npm registry là tuỳ chọn khi phát hành. `[M2]`
 
 ### R19. Hiệu năng `[M1]`
 
