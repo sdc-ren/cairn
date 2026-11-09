@@ -107,8 +107,8 @@ previous handoff.
 | `--no-gh` | Do not ask `gh` for open pull requests |
 
 ```bash
-cairn save --task PROJ-268 --file handoff.md
-cairn template > handoff.md     # start from the template, fill it in, then save it
+cairn template > handoff.md                    # start from the template and fill it in
+cairn save --task PROJ-268 --file handoff.md   # then save it
 ```
 
 ### `cairn list` — list handoffs
