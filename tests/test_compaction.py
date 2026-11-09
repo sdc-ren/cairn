@@ -51,11 +51,13 @@ def test_pre_compact_prints_summary_instructions_and_never_blocks(
 def test_post_compact_nudges_when_no_recent_handoff(repo, monkeypatch, capsys):
     code, captured = _run(monkeypatch, capsys, "post-compact")
 
-    context = json.loads(captured.out)["hookSpecificOutput"]["additionalContext"]
+    payload = json.loads(captured.out)
     assert code == 0
-    assert len(context) <= 600
-    assert "/cairn:handoff" in context
-    assert "Do not save it yourself unless they agree" in context
+    assert set(payload) == {"systemMessage"}
+    assert payload["systemMessage"] == (
+        "cairn: no handoff saved for this project in the last 2h. "
+        "Run /cairn:handoff to keep this work for a new session."
+    )
 
 
 @pytest.mark.req("R23.5")

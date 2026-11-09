@@ -372,8 +372,8 @@ Bối cảnh: Claude Code không có hook cho "sắp hết quota" hay "ngữ c�
 2. `cairn hook pre-compact` PHẢI in ra stdout chỉ dẫn bằng tiếng Anh cho bản tóm tắt compaction (Claude Code dùng stdout của `PreCompact` làm chỉ dẫn tóm tắt): giữ nguyên mục tiêu, quyết định kèm lý do, hướng đã thử thất bại kèm lý do, bước tiếp theo, câu hỏi mở, file chính. Nội dung lấy từ Asset `precompact.md`.
 3. `hook pre-compact` KHÔNG ĐƯỢC chặn compaction (không exit 2, không `decision: block`).
 4. Plugin PHẢI đăng ký `SessionStart` matcher `compact` gọi `cairn hook post-compact`.
-5. KHI branch hiện tại không có handoff nào tạo trong khoảng `CAIRN_NUDGE_WINDOW` (mặc định `2h`), THÌ `hook post-compact` PHẢI in JSON `additionalContext` ≤ 600 ký tự (Asset `nudge.md`) yêu cầu agent nhắc người dùng **một dòng** rằng có thể gõ `/cairn:handoff`; ngược lại không in gì.
-6. Agent KHÔNG ĐƯỢC tự lưu handoff chỉ vì được nhắc; chỉ lưu khi người dùng đồng ý.
+5. KHI Dự án không có handoff nào tạo trong khoảng `CAIRN_NUDGE_WINDOW` (mặc định `2h`), THÌ `hook post-compact` PHẢI in JSON `{"systemMessage": …}` một dòng ≤ 200 ký tự (Asset `nudge.md`) nhắc người dùng có thể gõ `/cairn:handoff`; ngược lại không in gì. Dùng `systemMessage` vì nó hiện ngay cho người dùng, còn `additionalContext` chỉ tới tay agent ở lượt trả lời kế tiếp (kiểm thật 2026-11-09).
+6. Lời nhắc chỉ dành cho người dùng; cairn KHÔNG ĐƯỢC khiến agent tự lưu handoff.
 7. `CAIRN_NUDGE=off` tắt cả hai hook. R13.6, R13.7 áp dụng cho cả hai.
 8. KHI kiểm thực tế (task E5) cho thấy Claude Code không gọi hook của plugin ở hai sự kiện này, THÌ R23 chuyển sang M2, ghi lý do vào `verification.md`. `[manual]`
 

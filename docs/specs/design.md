@@ -369,12 +369,8 @@ pre_compact():                      # PreCompact, matcher manual|auto
 
 post_compact():                     # SessionStart, matcher compact
     if env CAIRN_NUDGE == "off": return 0
-    try:
-        cwd = event.cwd or os.getcwd()
-        if store.newest(branch=current_branch(cwd), max_age=CAIRN_NUDGE_WINDOW): return 0
-        emit(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
-                                                "additionalContext": assets.load("nudge.md")}}))
-    except Exception as e: warn(f"hook: {e}")
+    if store.newest(project) created within CAIRN_NUDGE_WINDOW: return 0
+    emit(json.dumps({"systemMessage": assets.fill("nudge.md", window=…)}))   # hiện ngay cho người dùng
     return 0
 ```
 
@@ -382,7 +378,7 @@ post_compact():                     # SessionStart, matcher compact
 
 `precompact.md` (rút gọn): *"When summarizing, preserve verbatim: the goal and done-criteria, each decision with its reason, approaches that failed and why, the ordered next steps, open questions, key files. Do not compress these into generic statements."*
 
-`nudge.md`: *"Context was just compacted and no cairn handoff was saved recently for this branch. In one short line, in the user's language, tell the user they can run /cairn:handoff to save one. Do not save it yourself unless they agree."*
+`nudge.md`: *"cairn: no handoff saved for this project in the last {{window}}. Run /cairn:handoff to keep this work for a new session."* Đi qua `systemMessage` nên người dùng thấy ngay sau `/compact`, không cần agent trả lời.
 
 ### 5.7. Chấm chất lượng (R24)
 

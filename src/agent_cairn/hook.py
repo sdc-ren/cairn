@@ -66,14 +66,19 @@ def _pre_compact() -> None:
 
 
 def _post_compact() -> None:
-    """Ask for a one-line reminder when no handoff was saved recently (R23.5)."""
+    """Show the user a one-line reminder when no handoff was saved recently (R23.5).
+
+    ``systemMessage`` reaches the user at once; ``additionalContext`` would wait for the
+    agent's next reply, which after ``/compact`` may never come before the session ends.
+    """
     root = store.root(_event_cwd())
-    window = timeutil.parse_duration(os.environ.get(NUDGE_WINDOW_ENV, NUDGE_WINDOW_DEFAULT))
+    text = os.environ.get(NUDGE_WINDOW_ENV, NUDGE_WINDOW_DEFAULT)
+    window = timeutil.parse_duration(text)
     latest = store.newest(root)
     now = timeutil.now_utc()
     if latest and now - timeutil.parse_iso(str(latest.meta.get("created_at"))) <= window:
         return
-    _emit_context(assets.fill(NUDGE_ASSET).rstrip("\n"))
+    out.emit(json.dumps({"systemMessage": assets.fill(NUDGE_ASSET, window=text).rstrip("\n")}))
 
 
 def _emit_context(context: str) -> None:
