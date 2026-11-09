@@ -1,6 +1,6 @@
 {
   "name": "agent-cairn",
-  "version": "0.2.0",
+  "version": "0.3.0-dev.0",
   "description": "Hand off AI agent work between Claude Code sessions, accounts and agents without re-explaining. Needs python3 3.9+.",
   "license": "MIT",
   "author": "sondc",
