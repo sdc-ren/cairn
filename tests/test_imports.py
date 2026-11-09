@@ -73,14 +73,17 @@ ALLOWED = {
     "assets": set(),
     "capture": {"constants", "errors", "gh", "gitio"},
     "cli": {
+        "clipboard",
         "commands",
         "constants",
         "doctor",
         "errors",
         "gitio",
         "hook",
+        "integrations",
         "out",
         "render",
+        "store",
         "timeutil",
     },
     "commands": {
@@ -99,14 +102,16 @@ ALLOWED = {
         "timeutil",
         "validate",
     },
+    "clipboard": {"constants", "errors", "proc"},
     "constants": set(),
-    "doctor": {"constants", "errors", "gitio", "proc", "store"},
+    "doctor": {"clipboard", "constants", "errors", "gitio", "proc", "store"},
     "document": {"constants", "errors"},
     "drift": {"capture", "constants", "document", "errors", "gitio"},
     "errors": set(),
     "gh": {"constants", "errors", "proc"},
     "gitio": {"constants", "errors", "proc"},
     "hook": {"assets", "commands", "constants", "out", "store", "timeutil"},
+    "integrations": {"assets", "constants"},
     "out": set(),
     "proc": {"errors"},
     "render": {"assets", "capture", "constants", "document", "timeutil"},
@@ -117,7 +122,7 @@ ALLOWED = {
     "validate": {"constants", "document"},
 }
 PURE_CORE = {"document", "validate", "secrets", "resolve", "render", "timeutil"}
-IO_SHELL = {"proc", "gitio", "gh", "store", "out", "cli", "hook", "commands", "doctor"}
+IO_SHELL = {"proc", "gitio", "gh", "store", "out", "cli", "hook", "commands", "doctor", "clipboard"}
 
 
 def _runtime_nodes(tree):

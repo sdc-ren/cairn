@@ -17,7 +17,7 @@ and what comes next. Git keeps the code, not the reasoning. cairn keeps it.
 - **Local and plain.** Markdown files under `~/.cairn`, mode `0600`. No database, no network,
   no LLM calls, Python standard library only.
 
-> Status: **0.1.0 development preview.** It is used daily by its author. File format and commands
+> Status: **0.2.0 development preview.** It is used daily by its author. File format and commands
 > may still change before 0.1.
 
 ## Install
@@ -34,6 +34,19 @@ claude plugin install cairn@sdc-ren
 The plugin bundles the CLI, so nothing else is needed: skills and hooks call it directly.
 Start a new session afterwards. To try a local checkout instead, use
 `claude plugin marketplace add /path/to/cairn`.
+
+### Other agents and setups without the plugin
+
+```bash
+cairn init                       # skills /cairn-handoff and /cairn-resume in .claude/skills
+cairn init --global              # the same in ~/.claude/skills
+cairn init --agent agents-md     # a cairn block in AGENTS.md (Codex, Cursor and other agents)
+cairn prompt handoff             # instructions to paste into any agent
+cairn init --uninstall           # remove everything cairn installed
+```
+
+`init` never overwrites a file it did not write unless you pass `--force` (the old file is kept
+as `.bak`), and `--dry-run` shows what would change. These commands need `cairn` on your `PATH`.
 
 ### CLI in your terminal (optional)
 
@@ -113,7 +126,9 @@ cairn resume PROJ-268         # print it with the drift report and mark it resum
 cairn resume --peek --brief   # look without marking it resumed
 cairn capture                 # the git state cairn attaches to a handoff (--json)
 cairn template                # the body template agents fill in
-cairn doctor                  # check python, git, the Store, gh and the plugin
+cairn doctor                  # check python, git, the Store, gh, the plugin, the clipboard
+cairn resume PROJ-268 --copy  # also copy it to the clipboard, e.g. to paste into another agent
+cairn rm PROJ-268             # delete a handoff (asks first; --yes to skip)
 ```
 
 `cairn save` takes the body on stdin or `--file`, plus `--task`, `--title`, `--redact`

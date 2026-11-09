@@ -111,3 +111,18 @@ NUDGE_WINDOW_ENV = "CAIRN_NUDGE_WINDOW"
 NUDGE_WINDOW_DEFAULT = "2h"
 PRECOMPACT_ASSET = "precompact.md"
 NUDGE_ASSET = "nudge.md"
+
+# Other agents, see R21
+SKILL_NAMES = ("handoff", "resume")
+SKILLS_ASSET = "skills.json"
+STANDALONE_SKILL_PREFIX = "cairn-"
+MANAGED_MARKER = "<!-- managed-by: cairn v{version} -->"
+MANAGED_PREFIX = "<!-- managed-by: cairn "
+AGENTS_FILE = "AGENTS.md"
+AGENTS_BEGIN = "<!-- cairn:begin -->"
+AGENTS_END = "<!-- cairn:end -->"
+BACKUP_SUFFIX = ".bak"
+CLAUDE_DIR = ".claude"
+SKILLS_DIR = "skills"
+SKILL_FILE = "SKILL.md"
+CLIPBOARD_TIMEOUT_SECONDS = 5

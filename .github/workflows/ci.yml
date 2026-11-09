@@ -35,9 +35,13 @@ jobs:
         run: python scripts/req_coverage.py --level M1 --automated-only
       - name: Generated plugin files are up to date
         run: python scripts/gen_plugin.py --check
-      - name: Package builds and installs
+      - name: Package builds and installs with pip, pipx and uv
         run: |
-          python -m pip install build
+          python -m pip install build pipx uv
           python -m build
           python -m pip install dist/*.whl --force-reinstall
           cairn version
+          python -m pipx install dist/*.whl
+          "$(python -m pipx environment --value PIPX_BIN_DIR)/cairn" version
+          uv tool install dist/*.whl --force
+          "$(uv tool dir --bin)/cairn" version

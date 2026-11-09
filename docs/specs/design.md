@@ -51,6 +51,7 @@ Chia việc: **agent viết lý do; CLI ghi dữ kiện, kiểm tra, báo drift,
 | D19 | Khoá handoff = Task → branch → Dự án; hook chọn theo Dự án, ưu tiên cùng branch | Khoá theo branch; khoá theo session id | Mỗi phiên có thể là một worktree/branch mới, nên khoá branch làm hook không bao giờ khớp; session id mới mỗi phiên. Task (ticket) là thứ người dùng dùng để gọi tên công việc và ổn định qua các phiên. |
 | D20 | Workspace section có nhãn `worktree`/`pipeline` được cairn chụp và kiểm drift; nhãn khác giữ nguyên văn | Tự dò mọi git repo trong workspace; gắn cứng quy ước `.pipeline/` | Agent biết tài nguyên nào thuộc task; dò cả workspace thì lẫn task khác và chậm. Nhãn chung nên dự án khác dùng quy ước khác vẫn được. |
 | D21 | Không thêm skill `list`; `/cairn:resume` không kèm task tự hiện bảng `cairn list --status open` để chọn | Skill `/cairn:list` riêng | Xem danh sách gần như luôn đi kèm chọn một task để làm tiếp; giữ 2 lệnh phải nhớ và không tốn thêm context mỗi phiên (~60 token cho một skill). |
+| D22 | Kênh không có plugin (`init`, `prompt`, AGENTS.md) dùng chung module `integrations` với `gen_plugin.py`; skill rời tên `cairn-handoff`/`cairn-resume`; `prompt` thay phần chỉ Claude Code hiểu bằng một bảng thay thế duy nhất | Viết riêng văn bản cho từng kênh | Một nguồn văn bản (R21.5): sửa skill là mọi kênh đổi theo. Không có namespace `/cairn:` nên cần tiền tố tránh trùng `/handoff` của người khác. |
 
 ## 3. Cấu trúc repo
 
@@ -110,7 +111,7 @@ cairn/
 ├── pyproject.toml · Makefile · README.md · CHANGELOG.md · LICENSE · CONTRIBUTING.md
 ```
 
-M2 thêm: `clipboard.py`, `integrations.py` (`init`, AGENTS.md).
+M2 thêm: `clipboard.py` (pbcopy → wl-copy → xclip), `integrations.py` (skill rời, AGENTS.md, `prompt`, gỡ cài); `gen_plugin.py` dùng lại `integrations.skill_text`.
 
 Hướng phụ thuộc giữa các module: nguồn duy nhất là bảng `ALLOWED` trong `tests/test_imports.py`; test chặn mọi import ngoài bảng (bỏ qua import chỉ dùng cho type hint) và chặn lõi thuần import vỏ I/O. Thêm cạnh mới là thay đổi thiết kế, sửa bảng trong cùng PR.
 

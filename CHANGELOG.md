@@ -4,7 +4,21 @@ All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] - 0.1.0.dev0
+## [Unreleased] - 0.2.0.dev0
+
+### Added
+
+- `cairn init`: standalone skills `/cairn-handoff` and `/cairn-resume` for Claude Code without
+  the plugin (`--global`, `--force` with `.bak`, `--dry-run`), or a block in `AGENTS.md`
+  (`--agent agents-md`); `--uninstall` removes only what cairn wrote.
+- `cairn prompt handoff|resume`: the same instructions, written for any agent.
+- `cairn rm`: delete handoffs after confirmation (`--yes` when not on a terminal).
+- `resume --copy`: copy the output with pbcopy, wl-copy or xclip.
+- `doctor` checks the clipboard and whether `cairn` is on `PATH`.
+- CI installs the wheel with pip, pipx and uv; `release.yml` publishes to PyPI with Trusted
+  Publishing when a `v*` tag is pushed.
+
+## 0.1.0.dev0
 
 ### Added
 

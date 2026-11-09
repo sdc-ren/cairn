@@ -21,15 +21,9 @@ def test_doctor_reports_each_check(git_repo, fake_gh, capsys):
 
     lines = capsys.readouterr().out.splitlines()
     assert code == 0
-    assert [line.split()[1] for line in lines] == [
-        "python",
-        "git",
-        "repository",
-        "store",
-        "gh",
-        "plugin",
-    ]
-    assert all(line.split()[0] == "ok" for line in lines)
+    names = [line.split()[1] for line in lines]
+    assert names == ["python", "git", "repository", "store", "gh", "plugin", "clipboard", "command"]
+    assert all(line.split()[0] == "ok" for line in lines[:6])
 
 
 @pytest.mark.req("R15.1")
@@ -71,3 +65,11 @@ def test_doctor_store_not_writable_fails(git_repo, monkeypatch, tmp_path):
 
     blocked.chmod(0o700)
     assert check.level == ("ok" if os.geteuid() == 0 else "fail")
+
+
+@pytest.mark.req("R15.1")
+def test_doctor_reports_clipboard_and_command_install(git_repo, no_gh):
+    levels = _levels(git_repo)
+
+    assert levels["clipboard"] == "warn"
+    assert levels["command"] == "warn"

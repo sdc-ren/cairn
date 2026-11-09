@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Trạng thái | Draft — chờ duyệt |
-| Phiên bản spec | 1.7 |
+| Phiên bản spec | 1.8 |
 | Ngày | 2026-11-09 |
 | Tài liệu liên quan | [design.md](design.md) · [tasks.md](tasks.md) · [CODING_STANDARDS](../CODING_STANDARDS.md) |
 
@@ -348,12 +348,12 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 ### R21. Kênh cho agent khác `[M2]`
 
-1. `cairn init` cài skill vào `.claude/skills/` (project) hoặc `~/.claude/skills/` (`--global`) cho người không dùng plugin; file có marker `<!-- managed-by: cairn v<version> -->`; không ghi đè file thiếu marker trừ khi `--force` (sao lưu `.bak`).
+1. `cairn init` cài skill `cairn-handoff`, `cairn-resume` (tên có tiền tố để không trùng skill khác khi không có namespace của plugin) vào `.claude/skills/` của Dự án hoặc `~/.claude/skills/` (`--global`) cho người không dùng plugin; file có marker `<!-- managed-by: cairn v<version> -->`; không ghi đè file thiếu marker trừ khi `--force` (sao lưu `.bak`); `--dry-run` chỉ in việc sẽ làm.
 2. `cairn init --agent agents-md` thêm/cập nhật khối giữa `<!-- cairn:begin -->` và `<!-- cairn:end -->` trong `AGENTS.md`.
-3. `cairn prompt handoff|resume` in chỉ dẫn để paste vào agent bất kỳ.
+3. `cairn prompt handoff|resume` in chỉ dẫn để paste vào agent bất kỳ: chính thân skill, với phần chỉ Claude Code hiểu (`${CLAUDE_PROJECT_DIR}`, `${CLAUDE_SESSION_ID}`, dòng `ARGUMENTS:`) được thay bằng cách nói chung.
 4. `cairn init --uninstall` gỡ mọi thứ có marker.
 5. Mọi văn bản ở R21.1–R21.3 PHẢI sinh từ cùng Asset với plugin (R11.7).
-6. Publish PyPI `agent-cairn`.
+6. Publish PyPI `agent-cairn` qua workflow `release.yml` (Trusted Publishing, chạy khi gắn tag `v*`). `[manual]`
 
 ### R22. Ngôn ngữ `[M1]`
 

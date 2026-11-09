@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -32,7 +33,7 @@ from agent_cairn.constants import (
     TEMPLATE_ASSET,
 )
 from agent_cairn.document import Handoff
-from agent_cairn.errors import InvalidHandoffError
+from agent_cairn.errors import InvalidHandoffError, UsageError
 from agent_cairn.validate import Violation
 
 if TYPE_CHECKING:
@@ -126,6 +127,29 @@ def list_handoffs(cwd: Path, wanted: ListFilter) -> list[Handoff]:
         and wanted.branch in (None, handoff.meta.get("branch"))
     ]
     return found if wanted.limit is None else found[: wanted.limit]
+
+
+def remove(cwd: Path, refs: list[str], *, confirmed: bool) -> list[str]:
+    """Delete the handoffs ``refs`` name after confirmation; return the removed IDs (R14.9).
+
+    Raises:
+        NotFoundError: a reference matches nothing or is ambiguous; nothing is deleted.
+        UsageError: confirmation is needed but stdin is not a terminal.
+    """
+    root = store.root(cwd)
+    chosen = {
+        str(h.meta.get("id")): h for h in (resolve.by_ref(store.handoffs(root), r) for r in refs)
+    }
+    if not confirmed:
+        if not sys.stdin.isatty():
+            raise UsageError("refusing to delete without --yes when stdin is not a terminal")
+        if out.ask(f"delete {len(chosen)} handoff(s)? [y/N]").casefold() not in ("y", "yes"):
+            return []
+    with store.lock(root):
+        for hid, handoff in chosen.items():
+            store.path_of(handoff).unlink()
+            out.note(f"removed {hid} (manual)")
+    return list(chosen)
 
 
 def show(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Path:

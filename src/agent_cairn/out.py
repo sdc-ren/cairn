@@ -23,6 +23,12 @@ def warn(message: str) -> None:
     print(f"{PREFIX}: {_colored('warning:', YELLOW)} {message}", file=sys.stderr)
 
 
+def ask(question: str) -> str:
+    """Ask on stderr and read one answer line from stdin, so stdout stays clean data."""
+    print(question, end=" ", file=sys.stderr, flush=True)
+    return sys.stdin.readline().strip()
+
+
 def detail(line: str) -> None:
     """Write a machine-readable line to stderr unprefixed, e.g. a violation (R5.4)."""
     print(line, file=sys.stderr)

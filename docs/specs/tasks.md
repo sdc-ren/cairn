@@ -255,15 +255,15 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ## Milestone 2 — 0.2 (phát hành rộng, agent khác)
 
-- [ ] **G1. Đóng gói PyPI** — `[project.scripts] cairn = "agent_cairn.cli:main"`, publish `agent-cairn`, test `pipx install` và `uv tool install` trong CI. Refs: R18.6, R21.6
-- [ ] **G2. `cairn init`** — cài skill (sinh từ cùng Asset) vào `.claude/skills/` hoặc `~/.claude/skills/`; marker, `--force` + `.bak`, `--dry-run`. Refs: R21.1, R21.5
-- [ ] **G3. `init --agent agents-md`** — khối có marker trong `AGENTS.md`. Refs: R21.2
-- [ ] **G4. `cairn prompt handoff|resume`.** Refs: R21.3, R21.5
-- [ ] **G5. `init --uninstall`.** Refs: R21.4
-- [ ] **G6. `rm`.** Refs: R14.9
-- [ ] **G7. `resume --copy` + `clipboard.py`.** Refs: R9.9
-- [ ] **G8. `doctor` mở rộng** — clipboard, cài đặt pipx. Refs: R15.1
-- [ ] **G9. Phát hành 0.2.0** — kiểm S4 với một agent không phải Claude; publish marketplace công khai.
+- [ ] **G1. Đóng gói PyPI** — `[project.scripts] cairn = "agent_cairn.cli:main"`, publish `agent-cairn`, test `pipx install` và `uv tool install` trong CI. Refs: R18.6, R21.6 — entry point, build, cài thử bằng pip/pipx/uv trong CI và workflow `release.yml` xong; còn cấu hình Trusted Publisher trên pypi.org rồi gắn tag
+- [x] **G2. `cairn init`** — cài skill (sinh từ cùng Asset) vào `.claude/skills/` hoặc `~/.claude/skills/`; marker, `--force` + `.bak`, `--dry-run`. Refs: R21.1, R21.5
+- [x] **G3. `init --agent agents-md`** — khối có marker trong `AGENTS.md`. Refs: R21.2
+- [x] **G4. `cairn prompt handoff|resume`.** Refs: R21.3, R21.5
+- [x] **G5. `init --uninstall`.** Refs: R21.4
+- [x] **G6. `rm`.** Refs: R14.9
+- [x] **G7. `resume --copy` + `clipboard.py`.** Refs: R9.9
+- [x] **G8. `doctor` mở rộng** — clipboard, cài đặt pipx. Refs: R15.1
+- [ ] **G9. Phát hành 0.2.0** — kiểm S4 với một agent không phải Claude; publish marketplace công khai. — chờ thử với agent khác (Codex, Cursor…) qua `cairn prompt` hoặc AGENTS.md
 
 ## Thứ tự phụ thuộc
 

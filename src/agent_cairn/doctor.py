@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from agent_cairn import __version__, gitio, proc, store
+from agent_cairn import __version__, clipboard, gitio, proc, store
 from agent_cairn.constants import GH_TIMEOUT_SECONDS, MIN_GIT_VERSION, MIN_PYTHON
 from agent_cairn.errors import CairnError, NotAGitRepoError
 
@@ -28,7 +29,22 @@ class Check:
 
 def run(cwd: Path) -> list[Check]:
     """Run every check for ``cwd``; none raises."""
-    return [_python(), _git(cwd), _repository(cwd), _store(cwd), _gh(cwd), _plugin()]
+    checks = [_python(), _git(cwd), _repository(cwd), _store(cwd), _gh(cwd), _plugin()]
+    return [*checks, _clipboard(), _command()]
+
+
+def _clipboard() -> Check:
+    tool = clipboard.available()
+    if tool:
+        return Check(OK, "clipboard", tool)
+    return Check(WARN, "clipboard", "no pbcopy, wl-copy or xclip; resume --copy only prints")
+
+
+def _command() -> Check:
+    found = shutil.which("cairn")
+    if found:
+        return Check(OK, "command", found)
+    return Check(WARN, "command", "cairn is not on PATH; `pipx install agent-cairn` adds it")
 
 
 def _python() -> Check:

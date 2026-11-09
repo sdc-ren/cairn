@@ -22,10 +22,11 @@ class Result:
     stderr: str
 
 
-def run(args: Sequence[str], *, cwd: Path, timeout: float) -> Result:
+def run(args: Sequence[str], *, cwd: Path, timeout: float, stdin: str | None = None) -> Result:
     """Run ``args`` without a shell and return its result.
 
-    stdin is closed so a child never consumes input meant for cairn (hooks read JSON from it).
+    ``stdin`` is sent to the child; without it stdin is closed so a child never consumes input
+    meant for cairn (hooks read JSON from it).
 
     Raises:
         CairnError: the executable is missing or did not finish within ``timeout`` seconds.
@@ -34,7 +35,8 @@ def run(args: Sequence[str], *, cwd: Path, timeout: float) -> Result:
         done = subprocess.run(
             list(args),
             cwd=cwd,
-            stdin=subprocess.DEVNULL,
+            input=stdin,
+            stdin=None if stdin is not None else subprocess.DEVNULL,
             capture_output=True,
             timeout=timeout,
             check=False,

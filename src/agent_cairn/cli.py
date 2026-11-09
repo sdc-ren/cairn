@@ -7,13 +7,26 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Callable, NoReturn
 
-from agent_cairn import __version__, commands, doctor, gitio, hook, out, render, timeutil
+from agent_cairn import (
+    __version__,
+    clipboard,
+    commands,
+    doctor,
+    gitio,
+    hook,
+    integrations,
+    out,
+    render,
+    store,
+    timeutil,
+)
 from agent_cairn.constants import (
     AGENT_ENV,
     LIST_DEFAULT_LIMIT,
     NO_HANDOFFS_MESSAGE,
+    SKILL_NAMES,
     STATUS_OPEN,
     STATUS_RESUMED,
     UNKNOWN_AGENT,
@@ -27,7 +40,9 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_INTERRUPTED = 130
 HELP_FLAGS = ("-h", "--help")
-STORE_COMMANDS = ("save", "show", "resume", "list", "capture", "doctor")
+STORE_COMMANDS = ("save", "show", "resume", "list", "capture", "doctor", "rm", "init")
+AGENT_CLAUDE = "claude"
+AGENT_AGENTS_MD = "agents-md"
 
 
 class _Parser(argparse.ArgumentParser):
@@ -49,6 +64,16 @@ def _build_parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     def command(name: str, summary: str) -> argparse.ArgumentParser:
         return sub.add_parser(name, add_help=False, help=summary, description=summary)
 
+    _add_save(command)
+    _add_reading(command)
+    _add_maintenance(command)
+    for name in STORE_COMMANDS:
+        sub.choices[name].add_argument("--dir", help="act on DIR instead of the current directory")
+    return parser, dict(sub.choices)
+
+
+def _add_save(command: Callable[[str, str], argparse.ArgumentParser]) -> None:
+    """Declare ``save`` and its flags (R5)."""
     save = command("save", "save a handoff (body on stdin or --file)")
     save.add_argument("--file", help="read the body from FILE ('-' for stdin)")
     save.add_argument("--title", help="replace the body's '# ' title")
@@ -58,12 +83,17 @@ def _build_parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     save.add_argument("--redact", action="store_true", help="replace secrets instead of failing")
     save.add_argument("--no-gh", action="store_true", help="do not ask gh for pull requests")
     save.add_argument("--dry-run", action="store_true", help="print the file, write nothing")
+
+
+def _add_reading(command: Callable[[str, str], argparse.ArgumentParser]) -> None:
+    """Declare the commands that read handoffs: show, resume, list (R6-R9)."""
     show = command("show", "print a handoff file")
     show.add_argument("--path", action="store_true", help="print only its file path")
     resume = command("resume", "print a handoff with its drift report and mark it resumed")
     resume.add_argument("--peek", action="store_true", help="do not mark it resumed")
     resume.add_argument("--brief", action="store_true", help="leave out the captured state")
     resume.add_argument("--json", action="store_true", help="print JSON")
+    resume.add_argument("--copy", action="store_true", help="also copy the output to the clipboard")
     for selector in (show, resume):
         selector.add_argument("ref", nargs="?", help="task, handoff id or id prefix")
         selector.add_argument("--any-branch", action="store_true", help="ignore the branch")
@@ -74,17 +104,29 @@ def _build_parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     listing.add_argument("--limit", type=int, default=LIST_DEFAULT_LIMIT)
     listing.add_argument("--all", action="store_true", help="no row limit")
     listing.add_argument("--json", action="store_true", help="print frontmatter as JSON")
+
+
+def _add_maintenance(command: Callable[[str, str], argparse.ArgumentParser]) -> None:
+    """Declare capture, doctor, rm, init, prompt, template, hook, version."""
     snapshot = command("capture", "print the git state cairn would attach to a handoff")
     snapshot.add_argument("--json", action="store_true", help="print JSON")
     snapshot.add_argument("--no-gh", action="store_true", help="do not ask gh for pull requests")
     command("doctor", "check the environment")
+    remove = command("rm", "delete handoffs after confirmation")
+    remove.add_argument("refs", nargs="+", help="tasks, handoff ids or id prefixes")
+    remove.add_argument("--yes", action="store_true", help="do not ask for confirmation")
+    init = command("init", "install cairn for setups without the Claude Code plugin")
+    init.add_argument("--agent", choices=[AGENT_CLAUDE, AGENT_AGENTS_MD], default=AGENT_CLAUDE)
+    init.add_argument("--global", dest="global_scope", action="store_true", help="~/.claude/skills")
+    init.add_argument("--force", action="store_true", help="replace files cairn did not write")
+    init.add_argument("--dry-run", action="store_true", help="show what would change")
+    init.add_argument("--uninstall", action="store_true", help="remove what cairn installed")
+    prompt = command("prompt", "print handoff or resume instructions to paste into any agent")
+    prompt.add_argument("skill", choices=list(SKILL_NAMES))
     command("template", "print the handoff body template")
     hook_parser = command("hook", "run a Claude Code hook")
     hook_parser.add_argument("event", choices=hook.EVENTS)
     command("version", "print the cairn version")
-    for name in STORE_COMMANDS:
-        sub.choices[name].add_argument("--dir", help="act on DIR instead of the current directory")
-    return parser, dict(sub.choices)
 
 
 def _dispatch(args: argparse.Namespace) -> int:
@@ -92,6 +134,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         out.emit(f"cairn {__version__}")
     elif args.command == "template":
         out.emit(commands.template())
+    elif args.command == "prompt":
+        out.emit(integrations.prompt(args.skill))
     elif args.command == "hook":
         return hook.run(args.event)
     else:
@@ -109,14 +153,38 @@ def _store_command(args: argparse.Namespace, cwd: Path) -> int:
         options = commands.ResumeOptions(
             args.ref, args.peek, args.brief, args.json, args.any_branch
         )
-        out.emit(commands.resume(cwd, options))
+        text = commands.resume(cwd, options)
+        out.emit(text)
+        if args.copy and not clipboard.copy(text):
+            out.warn("no clipboard tool found (pbcopy, wl-copy, xclip); printed only")
     elif args.command == "list":
         _print_list(args, cwd)
     elif args.command == "capture":
         out.emit(commands.capture_report(cwd, use_gh=not args.no_gh, as_json=args.json))
+    elif args.command == "rm":
+        commands.remove(cwd, args.refs, confirmed=args.yes)
+    elif args.command == "init":
+        _init(args, cwd)
     else:
         return _print_doctor(cwd)
     return EXIT_OK
+
+
+def _init(args: argparse.Namespace, cwd: Path) -> None:
+    project = store.project_dir(cwd)
+    if args.uninstall:
+        changes = integrations.uninstall(
+            project, global_scope=args.global_scope, dry_run=args.dry_run
+        )
+    elif args.agent == AGENT_AGENTS_MD:
+        changes = [integrations.install_agents_md(project, dry_run=args.dry_run)]
+    else:
+        root = integrations.skills_root(project, global_scope=args.global_scope)
+        changes = integrations.install_skills(root, force=args.force, dry_run=args.dry_run)
+    for change in changes:
+        out.emit(f"{change.action}: {change.path}")
+    if not changes:
+        out.emit("nothing to do")
 
 
 def _save_options(args: argparse.Namespace) -> commands.SaveOptions:
