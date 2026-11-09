@@ -271,7 +271,7 @@ def test_save_and_resume_are_fast_with_10_worktrees(git_repo, monkeypatch, capsy
 def test_package_installs_as_cairn_command_with_pipx_and_uv():
     pyproject = (ROOT_DIR / "pyproject.toml").read_text()
 
-    assert 'name = "agent-cairn"' in pyproject
+    assert 'name = "cairn-handoff"' in pyproject
     assert 'cairn = "agent_cairn.cli:main"' in pyproject
     assert "pipx install dist/*.whl" in CI
     assert "uv tool install dist/*.whl" in CI

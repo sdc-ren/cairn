@@ -3,11 +3,11 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Trạng thái | Draft — chờ duyệt |
-| Phiên bản spec | 1.9 |
+| Phiên bản spec | 1.10 |
 | Ngày | 2026-11-09 |
 | Tài liệu liên quan | [design.md](design.md) · [tasks.md](tasks.md) · [CODING_STANDARDS](../CODING_STANDARDS.md) |
 
-**Tên gọi.** Lệnh và plugin tên `cairn` (đống đá người leo núi để lại chỉ đường cho người đến sau). Tên package PyPI là `agent-cairn` vì `cairn` đã có người dùng; tên import Python là `agent_cairn`.
+**Tên gọi.** Lệnh và plugin tên `cairn` (đống đá người leo núi để lại chỉ đường cho người đến sau). Tên gói cài đặt (PyPI, npm) là `cairn-handoff`: `cairn` đã có người dùng, còn `agent-cairn` bị PyPI từ chối vì quá giống gói `agentcairn` có sẵn. Tên import Python giữ là `agent_cairn`.
 
 ## 1. Bối cảnh và bài toán
 
@@ -330,10 +330,10 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 3. Phụ thuộc ngoài: `git` ≥ 2.31 (bắt buộc), `gh` (tuỳ chọn). `[M1]`
 4. Subprocess dùng danh sách đối số, không `shell=True`, có timeout (git 10 giây, gh 5 giây, trong hook git 2 giây). `[M1]`
 5. Layout `src/agent_cairn/`, chạy được bằng `python3 -m agent_cairn` khi `src/` ở `PYTHONPATH`. `[M1]`
-6. `pyproject.toml` khai báo package `agent-cairn`, entry point `cairn = agent_cairn.cli:main`; cài được bằng `pipx install agent-cairn` và `uv tool install agent-cairn`. `[M2]`
+6. `pyproject.toml` khai báo package `cairn-handoff`, entry point `cairn = agent_cairn.cli:main`; cài được bằng `pipx install cairn-handoff` và `uv tool install cairn-handoff`. `[M2]`
 7. Không build step: mã trong plugin chính là mã trong `src/`. `[M1]`
 8. Launcher `bin/cairn` PHẢI chạy đúng khi được gọi qua symlink (npm `node_modules/.bin`, link trên `PATH`). `[M2]`
-9. Repo PHẢI có `package.json` (gói `agent-cairn`, `bin: cairn → bin/cairn`, version đồng bộ từ `__version__` qua `gen_plugin.py`) để chạy `npx github:sdc-ren/cairn …` không cần publish; đăng npm registry là tuỳ chọn khi phát hành. `[M2]`
+9. Repo PHẢI có `package.json` (gói `cairn-handoff`, `bin: cairn → bin/cairn`, version đồng bộ từ `__version__` qua `gen_plugin.py`) để chạy `npx github:sdc-ren/cairn …` không cần publish; đăng npm registry là tuỳ chọn khi phát hành. `[M2]`
 
 ### R19. Hiệu năng `[M1]`
 
@@ -355,7 +355,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 3. `cairn prompt handoff|resume` in chỉ dẫn để paste vào agent bất kỳ: chính thân skill, với phần chỉ Claude Code hiểu (`${CLAUDE_PROJECT_DIR}`, `${CLAUDE_SESSION_ID}`, dòng `ARGUMENTS:`) được thay bằng cách nói chung.
 4. `cairn init --uninstall` gỡ mọi thứ có marker.
 5. Mọi văn bản ở R21.1–R21.3 PHẢI sinh từ cùng Asset với plugin (R11.7).
-6. Publish PyPI `agent-cairn` qua workflow `release.yml` (Trusted Publishing, chạy khi gắn tag `v*`). `[manual]`
+6. Publish PyPI `cairn-handoff` qua workflow `release.yml` (Trusted Publishing, chạy khi gắn tag `v*`). `[manual]`
 
 ### R22. Ngôn ngữ `[M1]`
 

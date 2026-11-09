@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-cairn"
+name = "cairn-handoff"
 dynamic = ["version"]
 description = "Hand off agent work between sessions, accounts and agents without re-explaining."
 readme = "README.md"

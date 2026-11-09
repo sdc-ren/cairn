@@ -6,7 +6,13 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
-Work toward 0.3.0 lands here through pull requests into `develop`.
+## [0.2.1] - 2026-11-09
+
+### Changed
+
+- The package is published as `cairn-handoff` on PyPI and npm (`pipx install cairn-handoff`,
+  `uvx --from cairn-handoff cairn`). PyPI refused `agent-cairn` as too similar to an existing
+  project. The command is still `cairn` and the import name is still `agent_cairn`.
 
 ## [0.2.0] - 2026-11-09
 

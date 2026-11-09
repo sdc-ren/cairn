@@ -52,4 +52,4 @@ jobs:
       - name: npm package runs with npx
         run: |
           npm pack --pack-destination "$RUNNER_TEMP"
-          cd "$RUNNER_TEMP" && npx --yes --package ./agent-cairn-*.tgz cairn version
+          cd "$RUNNER_TEMP" && npx --yes --package ./cairn-handoff-*.tgz cairn version
