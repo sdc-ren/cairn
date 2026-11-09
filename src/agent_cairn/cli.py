@@ -98,10 +98,14 @@ def _add_reading(command: Callable[[str, str], argparse.ArgumentParser]) -> None
         selector.add_argument("ref", nargs="?", help="task, handoff id or id prefix")
         selector.add_argument("--any-branch", action="store_true", help="ignore the branch")
     listing = command("list", "list the project's handoffs, newest first")
-    listing.add_argument("--status", choices=[STATUS_OPEN, STATUS_RESUMED])
+    listing.add_argument(
+        "--status", choices=[STATUS_OPEN, STATUS_RESUMED], help="only handoffs with this status"
+    )
     listing.add_argument("--branch", help="only handoffs saved on this branch")
     listing.add_argument("--here", action="store_true", help="only the current branch")
-    listing.add_argument("--limit", type=int, default=LIST_DEFAULT_LIMIT)
+    listing.add_argument(
+        "--limit", type=int, default=LIST_DEFAULT_LIMIT, help="rows to show (default: 20)"
+    )
     listing.add_argument("--all", action="store_true", help="no row limit")
     listing.add_argument("--json", action="store_true", help="print frontmatter as JSON")
 
