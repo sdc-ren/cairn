@@ -65,4 +65,6 @@ jobs:
           # the CHANGELOG section of this version is the release text
           awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## /{on=0} on' CHANGELOG.md > notes.md
           test -s notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* --title "cairn $GITHUB_REF_NAME" --notes-file notes.md
+          # re-running the workflow (e.g. to publish to PyPI later) keeps the existing release
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" dist/* --title "cairn $GITHUB_REF_NAME" --notes-file notes.md
