@@ -2,7 +2,7 @@ name: Release
 
 # Push a tag such as v0.2.0 to build, create the GitHub release and (optionally) publish to PyPI.
 # PyPI uses Trusted Publishing: on pypi.org add this repository, the workflow "release.yml" and
-# the environment "pypi" as a trusted publisher of agent-cairn, then set the repository
+# the environment "pypi" as a trusted publisher of cairn-handoff, then set the repository
 # variable PUBLISH_PYPI=true. No token is stored.
 
 on:

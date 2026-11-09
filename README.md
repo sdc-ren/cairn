@@ -17,7 +17,7 @@ and what comes next. Git keeps the code, not the reasoning. cairn keeps it.
 - **Local and plain.** Markdown files under `~/.cairn`, mode `0600`. No database, no LLM calls,
   no network except an optional `gh` lookup of pull requests; Python standard library only.
 
-> Status: **0.2.0**, early release, used daily by its author. The file format and commands
+> Status: **0.2.1**, early release, used daily by its author. The file format and commands
 > may still change before 1.0.
 
 ## Contents
@@ -40,8 +40,8 @@ Requirements: macOS or Linux, `git` 2.31+, `python3` 3.9+ (the one shipped with 
 | You use | Install with | You get |
 |---|---|---|
 | Claude Code (recommended) | `claude plugin marketplace add sdc-ren/cairn`<br>`claude plugin install cairn@sdc-ren` | Skills `/cairn:handoff`, `/cairn:resume`, the hooks, and the CLI inside Claude |
-| A terminal | `pipx install git+https://github.com/sdc-ren/cairn` (or `uv tool install git+https://github.com/sdc-ren/cairn`) | The `cairn` command everywhere |
-| A terminal, nothing installed | `uvx --from git+https://github.com/sdc-ren/cairn cairn <command>`<br>or `npx github:sdc-ren/cairn <command>` | A one-off run, e.g. `npx github:sdc-ren/cairn list` |
+| A terminal | `pipx install cairn-handoff` (or `uv tool install cairn-handoff`) | The `cairn` command everywhere |
+| A terminal, nothing installed | `uvx --from cairn-handoff cairn <command>`<br>or `npx github:sdc-ren/cairn <command>` | A one-off run, e.g. `uvx --from cairn-handoff cairn list` |
 | Claude Code without the plugin | the terminal install, then `cairn init` | Skills `/cairn-handoff`, `/cairn-resume` |
 | Codex, Cursor or another agent | the terminal install, then `cairn init --agent agents-md` | Instructions in `AGENTS.md` |
 
@@ -305,7 +305,7 @@ session A                                   session B (new account, new day, new
 ```bash
 claude plugin uninstall cairn@sdc-ren   # the plugin
 cairn init --uninstall                  # skills or AGENTS.md block installed by cairn init
-pipx uninstall agent-cairn              # the terminal command
+pipx uninstall cairn-handoff              # the terminal command
 rm -rf ~/.cairn                         # every saved handoff
 ```
 

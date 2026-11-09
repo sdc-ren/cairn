@@ -44,7 +44,7 @@ def _command() -> Check:
     found = shutil.which("cairn")
     if found:
         return Check(OK, "command", found)
-    return Check(WARN, "command", "cairn is not on PATH; `pipx install agent-cairn` adds it")
+    return Check(WARN, "command", "cairn is not on PATH; `pipx install cairn-handoff` adds it")
 
 
 def _python() -> Check:

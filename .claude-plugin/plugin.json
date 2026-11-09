@@ -1,6 +1,6 @@
 {
   "name": "cairn",
-  "version": "0.3.0.dev0",
+  "version": "0.2.1",
   "description": "Hand off work between Claude Code sessions, accounts and agents without re-explaining.",
   "author": {
     "name": "sondc"
