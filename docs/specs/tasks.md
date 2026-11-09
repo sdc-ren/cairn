@@ -255,7 +255,7 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ## Milestone 2 — 0.2 (phát hành rộng, agent khác)
 
-- [ ] **G1. Đóng gói PyPI** — `[project.scripts] cairn = "agent_cairn.cli:main"`, publish `cairn-handoff`, test `pipx install` và `uv tool install` trong CI. Refs: R18.6, R21.6 — entry point, build, cài thử bằng pip/pipx/uv trong CI và workflow `release.yml` xong; còn cấu hình Trusted Publisher trên pypi.org rồi gắn tag
+- [x] **G1. Đóng gói PyPI** — phát hành `cairn-handoff` 0.2.1 qua `release.yml` với Trusted Publishing; CI cài thử bằng pip, pipx, uv. Refs: R18.6, R21.6
 - [x] **G2. `cairn init`** — cài skill (sinh từ cùng Asset) vào `.claude/skills/` hoặc `~/.claude/skills/`; marker, `--force` + `.bak`, `--dry-run`. Refs: R21.1, R21.5
 - [x] **G3. `init --agent agents-md`** — khối có marker trong `AGENTS.md`. Refs: R21.2
 - [x] **G4. `cairn prompt handoff|resume`.** Refs: R21.3, R21.5
