@@ -215,6 +215,7 @@ def _prepare(body: str, options: SaveOptions) -> str:
         Violation(f"{RULE_CREDENTIAL_PREFIX}{finding.pattern}", leak, finding.line)
         for finding in secrets.scan(body)
     ]
+    violations.sort(key=lambda violation: violation.line or 0)
     blocking = validate.errors(violations)
     if blocking:
         raise InvalidHandoffError(

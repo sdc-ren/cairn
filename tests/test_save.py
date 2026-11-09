@@ -356,3 +356,18 @@ def test_list_limits_rows_unless_all(repo, monkeypatch, capsys, clock):
 def test_list_empty_store_says_so(repo, capsys):
     assert main(["list"]) == 0
     assert capsys.readouterr().out == "no handoffs yet\n"
+
+
+@pytest.mark.req("R5.4")
+def test_save_violations_are_listed_in_line_order(repo, monkeypatch, capsys):
+    token = "ghp_" + "q" * 36
+    body = FILLED_BODY.replace("Callback route exchanges the code.", f"Use {token}.").replace(
+        "- [ ] Set session cookie\n- [ ] Run `pnpm test:e2e login`", "Set it."
+    )
+
+    _save(monkeypatch, body)
+
+    lines = [line for line in capsys.readouterr().err.splitlines() if line.startswith("line ")]
+    numbers = [int(line.split()[1].rstrip(":")) for line in lines]
+    assert numbers == sorted(numbers)
+    assert len(numbers) == 2

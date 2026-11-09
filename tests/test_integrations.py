@@ -101,6 +101,7 @@ def test_prompt_handoff_embeds_template(capsys):
 
 @pytest.mark.req("R21.4")
 def test_uninstall_removes_only_cairn_files_and_block(repo):
+    (repo / "AGENTS.md").write_text("# Team rules\n")
     main(["init"])
     main(["init", "--agent", "agents-md"])
     other = repo / ".claude" / "skills" / "mine" / "SKILL.md"
@@ -112,7 +113,7 @@ def test_uninstall_removes_only_cairn_files_and_block(repo):
     assert not _skill(repo, "handoff").exists()
     assert not _skill(repo, "handoff").parent.exists()
     assert other.read_text() == "keep"
-    assert "cairn:begin" not in (repo / "AGENTS.md").read_text()
+    assert (repo / "AGENTS.md").read_text() == "# Team rules\n"
 
 
 def _save(monkeypatch, task):
@@ -200,3 +201,15 @@ def test_skill_text_matches_generated_plugin_file():
     text = integrations.skill_text("resume", header="<!-- x -->")
 
     assert text.split("<!-- x -->\n", 1)[1] in (ROOT_DIR / "skills/resume/SKILL.md").read_text()
+
+
+@pytest.mark.req("R21.4")
+def test_uninstall_leaves_no_trace_of_what_cairn_created(repo, capsys):
+    main(["init"])
+    main(["init", "--agent", "agents-md"])
+    assert "created: " in capsys.readouterr().out
+
+    main(["init", "--uninstall"])
+
+    assert not (repo / ".claude").exists()
+    assert not (repo / "AGENTS.md").exists()

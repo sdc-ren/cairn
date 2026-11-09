@@ -107,9 +107,10 @@ def install_agents_md(project: Path, *, dry_run: bool) -> Change:
     updated = _replace_block(current, block) if has_block else _append(current, block)
     if updated == current:
         return Change("unchanged", path)
+    action = "updated" if path.exists() else "created"
     if not dry_run:
         path.write_text(updated, encoding="utf-8")
-    return Change("would update" if dry_run else "updated", path)
+    return Change(f"would be {action}" if dry_run else action, path)
 
 
 def uninstall(project: Path, *, global_scope: bool, dry_run: bool) -> list[Change]:
@@ -121,16 +122,32 @@ def uninstall(project: Path, *, global_scope: bool, dry_run: bool) -> list[Chang
         if path.exists() and _managed(path.read_text(encoding="utf-8")):
             if not dry_run:
                 path.unlink()
-                if not any(path.parent.iterdir()):
-                    path.parent.rmdir()
+                _remove_empty_dirs(path.parent, stop=root.parent.parent)
             changes.append(Change("would remove" if dry_run else "removed", path))
     agents = project / AGENTS_FILE
     text = agents.read_text(encoding="utf-8") if agents.exists() else ""
     if AGENTS_BEGIN in text:
-        if not dry_run:
-            agents.write_text(_replace_block(text, "").strip("\n") + "\n", encoding="utf-8")
-        changes.append(Change("would update" if dry_run else "updated", agents))
+        changes.append(_strip_agents_block(agents, text, dry_run=dry_run))
     return changes
+
+
+def _strip_agents_block(path: Path, text: str, *, dry_run: bool) -> Change:
+    """Remove cairn's block; delete the file when nothing else was in it."""
+    rest = _replace_block(text, "").strip("\n")
+    if dry_run:
+        return Change("would remove" if not rest else "would update", path)
+    if rest:
+        path.write_text(rest + "\n", encoding="utf-8")
+        return Change("updated", path)
+    path.unlink()
+    return Change("removed", path)
+
+
+def _remove_empty_dirs(directory: Path, *, stop: Path) -> None:
+    """Remove ``directory`` and its parents while they are empty, never ``stop`` or above."""
+    while directory != stop and directory.is_dir() and not any(directory.iterdir()):
+        directory.rmdir()
+        directory = directory.parent
 
 
 def _write(path: Path, text: str, *, force: bool, dry_run: bool) -> Change:
