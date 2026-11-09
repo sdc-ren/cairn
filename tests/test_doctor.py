@@ -33,9 +33,7 @@ def test_doctor_reports_each_check(git_repo, fake_gh, capsys):
 
 
 @pytest.mark.req("R15.1")
-def test_doctor_warns_outside_repo_and_without_gh(outside_repo, monkeypatch):
-    monkeypatch.setenv("PATH", "/usr/bin:/bin")
-
+def test_doctor_warns_outside_repo_and_without_gh(outside_repo, no_gh):
     levels = _levels(outside_repo)
 
     assert levels["repository"] == "warn"

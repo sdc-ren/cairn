@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -149,3 +150,12 @@ def bare_remote(repo):
     git(repo, "remote", "add", "origin", str(remote))
     git(repo, "push", "-q", "-u", "origin", "main")
     return remote
+
+
+@pytest.fixture
+def no_gh(tmp_path, monkeypatch):
+    """A PATH that holds git but no gh, whatever is installed on the machine."""
+    bin_dir = tmp_path / "git-only"
+    bin_dir.mkdir()
+    (bin_dir / "git").symlink_to(shutil.which("git"))
+    monkeypatch.setenv("PATH", str(bin_dir))

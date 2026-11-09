@@ -87,9 +87,7 @@ def test_collect_repo_degrades_when_gh_fails(repo, fake_gh, monkeypatch, script,
 
 
 @pytest.mark.req("R4.5")
-def test_collect_repo_without_gh_installed_is_unavailable(repo, monkeypatch, tmp_path):
-    monkeypatch.setenv("PATH", "/usr/bin:/bin")
-
+def test_collect_repo_without_gh_installed_is_unavailable(repo, no_gh):
     state = capture.collect_repo(repo, use_gh=True)
 
     text = render.captured(state, (), captured_at=CREATED)
