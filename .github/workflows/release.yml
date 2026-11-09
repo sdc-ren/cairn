@@ -1,8 +1,9 @@
 name: Release
 
-# Push a tag such as v0.2.0 to build, publish to PyPI and create the GitHub release.
-# PyPI publishing uses Trusted Publishing: on pypi.org, add this repository and the workflow
-# "release.yml" (environment "pypi") as a trusted publisher of agent-cairn. No token is stored.
+# Push a tag such as v0.2.0 to build, create the GitHub release and (optionally) publish to PyPI.
+# PyPI uses Trusted Publishing: on pypi.org add this repository, the workflow "release.yml" and
+# the environment "pypi" as a trusted publisher of agent-cairn, then set the repository
+# variable PUBLISH_PYPI=true. No token is stored.
 
 on:
   push:
@@ -33,6 +34,7 @@ jobs:
 
   pypi:
     needs: build
+    if: vars.PUBLISH_PYPI == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -45,7 +47,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
-    needs: pypi
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -58,4 +60,9 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          # the CHANGELOG section of this version is the release text
+          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## /{on=0} on' CHANGELOG.md > notes.md
+          test -s notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --title "cairn $GITHUB_REF_NAME" --notes-file notes.md

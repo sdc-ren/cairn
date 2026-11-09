@@ -4,29 +4,12 @@ All notable changes are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] - 0.2.0.dev0
+## [0.2.0] - 2026-11-09
+
+First public release.
 
 ### Added
 
-- `cairn init`: standalone skills `/cairn-handoff` and `/cairn-resume` for Claude Code without
-  the plugin (`--global`, `--force` with `.bak`, `--dry-run`), or a block in `AGENTS.md`
-  (`--agent agents-md`); `--uninstall` removes only what cairn wrote.
-- `cairn prompt handoff|resume`: the same instructions, written for any agent.
-- `cairn rm`: delete handoffs after confirmation (`--yes` when not on a terminal).
-- `resume --copy`: copy the output with pbcopy, wl-copy or xclip.
-- `doctor` checks the clipboard and whether `cairn` is on `PATH`.
-- `package.json`: run without installing via `npx github:sdc-ren/cairn <command>`; the version
-  is kept in sync by `scripts/gen_plugin.py`.
-
-### Fixed
-
-- `bin/cairn` works when called through a symlink (npm's `node_modules/.bin`, a link on `PATH`).
-- CI installs the wheel with pip, pipx and uv; `release.yml` publishes to PyPI with Trusted
-  Publishing when a `v*` tag is pushed.
-
-## 0.1.0.dev0
-
-### Added
 
 - `cairn capture`, `cairn template`, `cairn doctor`; `-h` on every command.
 - `save --title`, `--redact`, `--dry-run`, `--no-gh`; warnings for missing recommended sections
@@ -42,6 +25,24 @@ All notable changes are listed here. The format follows
 - Skills are generated from `src/agent_cairn/assets`; CI checks types, duplication, dead code,
   module size, 85% coverage and that every automated requirement has a test.
 - Evaluation scenario and rubric for handoff quality (`docs/specs/eval`).
+
+
+- `cairn init`: standalone skills `/cairn-handoff` and `/cairn-resume` for Claude Code without
+  the plugin (`--global`, `--force` with `.bak`, `--dry-run`), or a block in `AGENTS.md`
+  (`--agent agents-md`); `--uninstall` removes only what cairn wrote.
+- `cairn prompt handoff|resume`: the same instructions, written for any agent.
+- `cairn rm`: delete handoffs after confirmation (`--yes` when not on a terminal).
+- `resume --copy`: copy the output with pbcopy, wl-copy or xclip.
+- `doctor` checks the clipboard and whether `cairn` is on `PATH`.
+- `package.json`: run without installing via `npx github:sdc-ren/cairn <command>`; the version
+  is kept in sync by `scripts/gen_plugin.py`.
+
+### Fixed
+
+
+- `bin/cairn` works when called through a symlink (npm's `node_modules/.bin`, a link on `PATH`).
+- CI installs the wheel with pip, pipx and uv; `release.yml` publishes to PyPI with Trusted
+  Publishing when a `v*` tag is pushed.
 
 ## [0.0.1] - 2026-11-09
 

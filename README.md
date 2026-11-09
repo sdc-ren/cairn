@@ -17,7 +17,7 @@ and what comes next. Git keeps the code, not the reasoning. cairn keeps it.
 - **Local and plain.** Markdown files under `~/.cairn`, mode `0600`. No database, no LLM calls,
   no network except an optional `gh` lookup of pull requests; Python standard library only.
 
-> Status: **0.2.0 development preview**, used daily by its author. The file format and commands
+> Status: **0.2.0**, early release, used daily by its author. The file format and commands
 > may still change before 1.0.
 
 ## Contents
