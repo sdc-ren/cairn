@@ -443,8 +443,8 @@ post_compact():                     # SessionStart, matcher compact
 
 ```json
 {
-  "name": "cairn",
-  "owner": { "name": "<owner>" },
+  "name": "sdc-ren",
+  "owner": { "name": "sdc-ren" },
   "plugins": [
     { "name": "cairn", "source": "./", "description": "Agent handoff: save and resume session context." }
   ]
@@ -455,7 +455,7 @@ Cài đặt:
 
 ```bash
 claude plugin marketplace add ./cairn        # MVP, từ thư mục local
-claude plugin install cairn@cairn
+claude plugin install cairn@sdc-ren
 ```
 
 Sau khi publish: `claude plugin marketplace add <owner>/cairn`.

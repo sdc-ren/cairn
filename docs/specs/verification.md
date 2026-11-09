@@ -27,7 +27,7 @@ Cài (một lần, từ thư mục repo):
 
 ```bash
 claude plugin marketplace add /path/to/cairn
-claude plugin install cairn@cairn
+claude plugin install cairn@sdc-ren
 ```
 
 Rồi mở một phiên Claude Code mới trong thư mục làm việc (git repo hoặc workspace chứa nhiều repo). Handoff lưu ở `~/.cairn/<dự-án>-<hash>/<id>.md`; nhờ agent chạy `cairn show --path` để thấy file đang được chọn.

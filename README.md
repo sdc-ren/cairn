@@ -28,7 +28,7 @@ Requirements: macOS or Linux, `git` 2.31+, `python3` 3.9+ (the one shipped with 
 
 ```bash
 claude plugin marketplace add sdc-ren/cairn
-claude plugin install cairn@cairn
+claude plugin install cairn@sdc-ren
 ```
 
 The plugin bundles the CLI, so nothing else is needed: skills and hooks call it directly.
@@ -156,7 +156,7 @@ session A                                   session B (new account, new day, new
 ## Uninstall
 
 ```bash
-claude plugin uninstall cairn@cairn
+claude plugin uninstall cairn@sdc-ren
 rm -rf ~/.cairn        # deletes every saved handoff
 ```
 

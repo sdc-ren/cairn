@@ -243,8 +243,8 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 **User story:** Là Dev, tôi muốn cài một lần là có đủ lệnh, skill và hook, không phải cài thêm CLI hay sửa cấu hình.
 
-1. Thư mục gốc repo PHẢI vừa là plugin vừa là marketplace: `.claude-plugin/plugin.json` (tên `cairn`) và `.claude-plugin/marketplace.json` có đúng một plugin `cairn` với `"source": "./"`.
-2. Cài đặt PHẢI chỉ cần: `claude plugin marketplace add <owner>/cairn` rồi `claude plugin install cairn@cairn` (hoặc tương đương `/plugin …` trong phiên). Cài từ thư mục local (`claude plugin marketplace add ./cairn`) PHẢI hoạt động để tự dùng trước khi publish. `[manual]`
+1. Thư mục gốc repo PHẢI vừa là plugin vừa là marketplace: `.claude-plugin/plugin.json` (tên `cairn`) và `.claude-plugin/marketplace.json` (tên `sdc-ren`, theo chủ sở hữu, để lệnh cài đọc là `cairn@sdc-ren`) có đúng một plugin `cairn` với `"source": "./"`.
+2. Cài đặt PHẢI chỉ cần: `claude plugin marketplace add <owner>/cairn` rồi `claude plugin install cairn@sdc-ren` (hoặc tương đương `/plugin …` trong phiên). Cài từ thư mục local (`claude plugin marketplace add ./cairn`) PHẢI hoạt động để tự dùng trước khi publish. `[manual]`
 3. Plugin PHẢI có `bin/cairn` — launcher POSIX `sh` chạy `python3` trên mã trong `src/` của chính plugin; không cần pipx hay mạng. Claude Code đưa `bin/` vào PATH của Bash tool nên skill gọi được `cairn` trực tiếp.
 4. KHI không tìm thấy `python3` ≥ 3.9, THÌ launcher PHẢI in `cairn: python3 >= 3.9 is required` ra stderr và thoát mã 1.
 5. Plugin PHẢI có skill `handoff` (`skills/handoff/SKILL.md`, gọi là `/cairn:handoff`) và `resume` (`/cairn:resume`), cho phép cả người dùng gọi và model tự kích hoạt.

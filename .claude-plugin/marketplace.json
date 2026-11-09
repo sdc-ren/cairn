@@ -1,8 +1,8 @@
 {
-  "name": "cairn",
-  "description": "cairn: hand off agent work between sessions, accounts and agents.",
+  "name": "sdc-ren",
+  "description": "Claude Code plugins by sdc-ren.",
   "owner": {
-    "name": "sondc"
+    "name": "sdc-ren"
   },
   "plugins": [
     {

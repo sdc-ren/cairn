@@ -50,7 +50,7 @@ def _run_launcher(*args, env=None):
 def test_marketplace_lists_exactly_this_plugin_at_root():
     marketplace = _json(".claude-plugin/marketplace.json")
 
-    assert marketplace["name"] == "cairn"
+    assert marketplace["name"] == "sdc-ren"
     assert [(p["name"], p["source"]) for p in marketplace["plugins"]] == [("cairn", "./")]
 
 

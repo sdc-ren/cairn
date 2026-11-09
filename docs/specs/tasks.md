@@ -228,7 +228,7 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
   - Refs: R11.6, R11.9, R13.2
 
 - [ ] **P4. Cài local và chạy thử end-to-end**
-  - `claude plugin marketplace add ./cairn` → `claude plugin install cairn@cairn` trên máy thật.
+  - `claude plugin marketplace add ./cairn` → `claude plugin install cairn@sdc-ren` trên máy thật.
   - Chạy S1 (hai tài khoản), S2 (commit tay sau handoff), S3 (hai worktree); kiểm R16.7: không gõ lệnh terminal nào sau khi cài.
   - **Done khi:** bằng chứng (lệnh, output rút gọn, ảnh nếu cần) ghi trong `docs/specs/verification.md`; mọi lỗi phát hiện được sửa trong task tương ứng.
   - Refs: R11.2, R16.6, R16.7, R19.1, R19.2
