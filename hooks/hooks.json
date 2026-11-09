@@ -1,0 +1,18 @@
+{
+  "description": "cairn: inject the open handoff of this branch at session start",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
+            "args": ["hook", "session-start"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

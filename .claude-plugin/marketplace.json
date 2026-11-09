@@ -1,0 +1,14 @@
+{
+  "name": "cairn",
+  "description": "cairn: hand off agent work between sessions, accounts and agents.",
+  "owner": {
+    "name": "sondc"
+  },
+  "plugins": [
+    {
+      "name": "cairn",
+      "source": "./",
+      "description": "Agent handoff: save and resume session context."
+    }
+  ]
+}

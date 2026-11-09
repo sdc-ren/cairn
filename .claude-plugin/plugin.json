@@ -1,0 +1,11 @@
+{
+  "name": "cairn",
+  "version": "0.0.1",
+  "description": "Hand off work between Claude Code sessions, accounts and agents without re-explaining.",
+  "author": {
+    "name": "sondc"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/sdc-ren/cairn",
+  "homepage": "https://github.com/sdc-ren/cairn"
+}

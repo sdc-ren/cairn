@@ -1,0 +1,13 @@
+#!/bin/sh
+# cairn launcher: runs the bundled package with the system python3 (stdlib only, no install).
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+py=${CAIRN_PYTHON:-python3}
+if command -v "$py" >/dev/null 2>&1 \
+   && "$py" -c 'import sys; sys.exit(sys.version_info < (3, 9))' 2>/dev/null; then
+  exec "$py" -E -s -c \
+    'import sys; sys.path.insert(0, sys.argv.pop(1)); from agent_cairn.cli import main; raise SystemExit(main())' \
+    "$root/src" "$@"
+fi
+echo "cairn: python3 >= 3.9 is required" >&2
+exit 1
