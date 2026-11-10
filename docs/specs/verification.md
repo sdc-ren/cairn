@@ -58,7 +58,7 @@ Nếu bước 1 bị hỏi quyền: ghi lại nguyên văn lệnh agent chạy; 
 
 | Tiêu chí / task | Cách kiểm | Kết quả |
 |---|---|---|
-| R21.6 publish PyPI (G1) | Trên pypi.org thêm Trusted Publisher: repo `sdc-ren/cairn`, workflow `release.yml`, environment `pypi`; rồi `git tag v0.2.0 && git push --tags`; sau đó `pipx install cairn-handoff` trên máy khác. | Chờ |
+| R21.6 publish PyPI (G1) | Trusted Publisher cho `cairn-handoff` (repo `sdc-ren/cairn`, `release.yml`, environment `pypi`), biến `PUBLISH_PYPI=true`, tag `v0.2.1`. | Đạt, 2026-11-09: workflow Release xanh (build, github-release, pypi); `cairn-handoff 0.2.1` có wheel và sdist trên PyPI; `uvx --from cairn-handoff cairn version` và `pipx install cairn-handoff` đều in `cairn 0.2.1`. Tên `agent-cairn` bị PyPI từ chối (quá giống `agentcairn`). |
 | G9 S4 agent khác | Trong Codex/Cursor/…: `cairn init --agent agents-md` hoặc dán `cairn prompt handoff`, lưu handoff, rồi resume ở agent khác. | Chờ |
 
 ## F3 — kịch bản chuẩn
