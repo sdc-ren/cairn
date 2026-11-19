@@ -13,6 +13,16 @@ Rules:
 - Workspace: list every worktree and pipeline/run directory this task uses, with paths relative
   to the project directory, so the next session knows where to continue and cairn can check
   them for changes.
+- The next session has none of this conversation. Before writing, scan the whole conversation
+  for what it would otherwise have to rediscover or ask again:
+  - instructions the user gave that still apply (work mode, test policy, writing style, how to
+    address people, UI rules): put them under `User rules & preferences`, quoted briefly;
+  - how to bring the work back up (data source and why, services, ports, logins to redo, launch
+    commands, ids of stopped background runs): put them under `Environment / how to run`;
+  - who made each decision (the user, the PO with a comment id or link, a reviewer).
+- Never point at paths that only exist for this session (scratchpad, /tmp/claude-...): copy the
+  file into the project first (for example the pipeline folder) and point there. cairn warns
+  about such paths.
 
 Steps:
 1. Fill the template below from this conversation. Replace every `<...>` and remove the

@@ -253,6 +253,11 @@ Các task dưới đây **mở rộng** module đã có từ M0, không viết l
 
 ---
 
+## 0.3 — sửa theo nhật ký dùng thật
+
+- [x] **H1. Đầu phiên chỉ báo danh sách; nạp theo mã task trong tin nhắn** — thông báo ngắn ở `SessionStart`, nạp đầy đủ khi `/clear` hoặc handoff < 1h, hook `UserPromptSubmit` nạp đúng task được nhắc tới (design D23). Refs: R13.3, R13.10, R13.11
+- [x] **H2. Handoff giữ đủ ngữ cảnh** — template thêm quy tắc người dùng, môi trường, người quyết định; cảnh báo đường dẫn tạm; ghi transcript (design D24). Refs: R2.5, R4.11, R5.10
+
 ## Milestone 2 — 0.2 (phát hành rộng, agent khác)
 
 - [x] **G1. Đóng gói PyPI** — phát hành `cairn-handoff` 0.2.1 qua `release.yml` với Trusted Publishing; CI cài thử bằng pip, pipx, uv. Refs: R18.6, R21.6

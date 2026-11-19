@@ -129,3 +129,16 @@ def test_validate_long_body_warns():
     body = FILLED_BODY + "\n" + "y" * 6_100
 
     assert _warnings(body) == ["body-long"]
+
+
+@pytest.mark.req("R5.10")
+@pytest.mark.parametrize(
+    "line",
+    [
+        "- script: /private/tmp/claude-501/abc/scratchpad/read.mjs",
+        "- see /tmp/claude-501/x/notes.md",
+        "- copied to scratchpad/run.sh",
+    ],
+)
+def test_validate_warns_about_session_temporary_paths(line):
+    assert _warnings(FILLED_BODY + "\n" + line + "\n") == ["temporary-path"]

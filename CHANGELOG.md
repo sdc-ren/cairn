@@ -6,6 +6,22 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- A new session no longer loads the newest handoff by default: it gets a short list of open
+  handoffs, and the one you mention by task or ID in your message is loaded (new
+  `UserPromptSubmit` hook). Loading in full still happens after `/clear` or when the handoff is
+  less than an hour old (`CAIRN_HOOK_FULL_WINDOW`). Before, most sessions started on other work
+  received the wrong handoff and marked it resumed.
+- The handoff template adds `User rules & preferences` and `Environment / how to run`, and asks
+  who made each decision.
+
+### Added
+
+- `save` warns about paths that only exist in the writing session (scratchpad, `/tmp/claude-…`).
+- `save --session` records the writing session's transcript path; the resume text tells the
+  agent to search it when a detail is missing.
+
 ## [0.2.1] - 2026-11-09
 
 ### Changed

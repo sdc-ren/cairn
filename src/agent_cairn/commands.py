@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import re
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from agent_cairn import (
@@ -22,6 +25,10 @@ from agent_cairn import (
     validate,
 )
 from agent_cairn.constants import (
+    CLAUDE_HOME,
+    CLAUDE_PROJECTS,
+    FULL_WINDOW_DEFAULT,
+    FULL_WINDOW_ENV,
     GIT_TIMEOUT_SECONDS,
     HOOK_CONTEXT_MAX_CHARS,
     HOOK_GIT_TIMEOUT_SECONDS,
@@ -29,8 +36,10 @@ from agent_cairn.constants import (
     RULE_CREDENTIAL_PREFIX,
     SCHEMA_VERSION,
     SHORT_SHA_CHARS,
+    SOURCE_CLEAR,
     STATUS_OPEN,
     TEMPLATE_ASSET,
+    TRANSCRIPT_SUFFIX,
 )
 from agent_cairn.document import Handoff
 from agent_cairn.errors import InvalidHandoffError, UsageError
@@ -38,7 +47,6 @@ from agent_cairn.validate import Violation
 
 if TYPE_CHECKING:
     from datetime import datetime, timedelta
-    from pathlib import Path
 
     from agent_cairn.capture import RepoState
     from agent_cairn.document import MetaValue
@@ -176,25 +184,60 @@ def resume(cwd: Path, options: ResumeOptions) -> str:
     return text
 
 
-def session_context(cwd: Path, *, max_age: timedelta) -> str | None:
-    """Return the brief resume text a new session receives, or None; marks it resumed (R13.3).
+def session_context(cwd: Path, *, max_age: timedelta, source: str) -> str | None:
+    """Return what a new session receives at start, or None (R13.3, R13.10).
 
-    Every session may be a fresh worktree on a new branch, so any open handoff of the project
-    qualifies; one on the current branch wins. The rest are listed so the user can switch.
+    Usually a short notice listing the open handoffs: a session may be about something else,
+    so nothing is loaded or marked resumed yet. The newest handoff is loaded in full only
+    after ``/clear`` or when it was saved within ``CAIRN_HOOK_FULL_WINDOW`` (default 1h).
     """
     root = store.root(cwd)
     now = timeutil.now_utc()
-    fresh = [
-        handoff
-        for handoff in store.handoffs(root)
-        if handoff.meta.get("status") == STATUS_OPEN
-        and now - timeutil.parse_iso(str(handoff.meta.get("created_at"))) <= max_age
-    ]
+    fresh = _fresh(root, now, max_age)
     if not fresh:
         return None
     chosen = resolve.pick(fresh, gitio.current_branch(cwd))
+    window = timeutil.parse_duration(os.environ.get(FULL_WINDOW_ENV, FULL_WINDOW_DEFAULT))
+    if source == SOURCE_CLEAR or now - _created(chosen) <= window:
+        return _load(cwd, root, chosen, others=[h for h in fresh if h is not chosen])
+    return render.notice(fresh, now=now, cwd=cwd)
+
+
+def prompt_context(cwd: Path, *, prompt: str, max_age: timedelta) -> str | None:
+    """Load the open handoff whose task or ID the user's message names, or None (R13.11)."""
+    root = store.root(cwd)
+    fresh = _fresh(root, timeutil.now_utc(), max_age)
+    named = [handoff for handoff in fresh if _names(prompt, handoff)]
+    if not named:
+        return None
+    return _load(cwd, root, named[0], others=[h for h in fresh if h is not named[0]])
+
+
+def _fresh(root: Path, now: datetime, max_age: timedelta) -> list[Handoff]:
+    """Open handoffs newer than ``max_age``, newest first."""
+    return [
+        handoff
+        for handoff in store.handoffs(root)
+        if handoff.meta.get("status") == STATUS_OPEN and now - _created(handoff) <= max_age
+    ]
+
+
+def _created(handoff: Handoff) -> datetime:
+    return timeutil.parse_iso(str(handoff.meta.get("created_at")))
+
+
+def _names(prompt: str, handoff: Handoff) -> bool:
+    """Whether ``prompt`` mentions the handoff's task (as a whole word, any case) or its ID."""
+    task = str(handoff.meta.get("task", ""))
+    if task and re.search(rf"(?<![\w-]){re.escape(task)}(?![\w-])", prompt, re.IGNORECASE):
+        return True
+    return str(handoff.meta.get("id", "")) in prompt
+
+
+def _load(cwd: Path, root: Path, chosen: Handoff, *, others: list[Handoff]) -> str:
+    """Render ``chosen`` for a session, mark it resumed and tidy the Store."""
+    now = timeutil.now_utc()
     report = drift.compute(chosen, git_timeout=HOOK_GIT_TIMEOUT_SECONDS, fallback=cwd)
-    others = [handoff for handoff in fresh if handoff is not chosen]
     text = _truncate(render.resume(chosen, report, brief=True, others=others), chosen)
     with store.lock(root):
         store.mark_resumed(chosen, now=now)
@@ -242,9 +285,35 @@ def _meta(repo: RepoState, body: str, options: SaveOptions, now: datetime) -> di
         "agent": options.agent,
         "cairn_version": __version__,
     }
-    optional = (("task", options.task), ("session_id", options.session_id))
+    transcript = _transcript(state.path, options.session_id)
+    optional = (
+        ("task", options.task),
+        ("session_id", options.session_id),
+        ("transcript", transcript),
+    )
     meta.update({key: value for key, value in optional if value})
     return meta
+
+
+def _transcript(directory: Path, session_id: str | None) -> str | None:
+    """Return the writing session's Claude Code transcript if it exists (R4.11).
+
+    Claude Code keeps it at ``~/.claude/projects/<dir with non-alphanumerics as ->/<id>.jsonl``.
+    """
+    if not session_id:
+        return None
+    for candidate in {str(directory), str(directory.resolve())}:
+        folder = re.sub(r"[^A-Za-z0-9]", "-", candidate)
+        path = (
+            Path.home()
+            / CLAUDE_HOME
+            / CLAUDE_PROJECTS
+            / folder
+            / f"{session_id}{TRANSCRIPT_SUFFIX}"
+        )
+        if path.is_file():
+            return str(path)
+    return None
 
 
 def _label(repo: RepoState, task: str | None) -> str:

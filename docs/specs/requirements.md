@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Trạng thái | Draft — chờ duyệt |
-| Phiên bản spec | 1.10 |
+| Phiên bản spec | 1.11 |
 | Ngày | 2026-11-09 |
 | Tài liệu liên quan | [design.md](design.md) · [tasks.md](tasks.md) · [CODING_STANDARDS](../CODING_STANDARDS.md) |
 
@@ -145,7 +145,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 2. Frontmatter PHẢI có: `id`, `schema` (=`1`), `created_at` (ISO 8601 UTC, hậu tố `Z`), `title`, `status`, `repo`, `worktree`, `branch`, `head` (SHA đầy đủ), `agent` (mặc định `unknown`), `cairn_version`.
 3. Frontmatter CÓ THỂ có `task`, `session_id` (phiên đã viết handoff), `resumed_at`, `resume_count`.
 4. Body PHẢI bắt đầu bằng `# <title>` và chứa section bắt buộc: `## Goal`, `## Current state`, `## Next steps`.
-5. Body NÊN chứa: `## Decisions`, `## Tried / didn't work`, `## Open questions`, `## Key files`, `## Workspace`.
+5. Body NÊN chứa: `## Decisions` (kèm ai quyết định), `## Tried / didn't work`, `## User rules & preferences`, `## Environment / how to run`, `## Open questions`, `## Key files`, `## Workspace`.
 6. Section khác PHẢI được giữ nguyên.
 7. Captured state PHẢI nằm sau dòng `<!-- cairn:captured -->`, bắt đầu bằng `## Captured state (auto-generated — do not edit)`.
 8. Nội dung template, tên section, Captured state PHẢI bằng tiếng Anh (R22).
@@ -169,6 +169,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 8. Lỗi git ở một worktree PHẢI được ghi `error: <ngắn gọn>` cho trường đó, các worktree khác vẫn xử lý.
 9. `capture` KHÔNG ĐƯỢC ghi vào Store.
 10. KHI Body có Workspace section, THÌ `save` PHẢI chụp với mỗi dòng `worktree: <path>` (tương đối theo Dự án hoặc tuyệt đối): có tồn tại không, branch, `head`, số file chưa commit; với mỗi dòng `pipeline: <path>`: có tồn tại không. Kết quả nằm trong Captured state và khối máy đọc `cairn:captured-json`. Dòng nhãn khác giữ nguyên văn, không kiểm.
+11. KHI có `--session` và transcript của phiên đó tồn tại (`~/.claude/projects/<thư mục, ký tự ngoài chữ số đổi thành ->/<session>.jsonl`), THÌ `save` PHẢI ghi đường dẫn vào frontmatter `transcript`, và preamble PHẢI chỉ cho agent tra transcript đó khi thiếu chi tiết.
 
 ### R5. Lệnh `save` `[M1]`
 
@@ -188,6 +189,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 7. Captured state PHẢI đầy đủ (R4.2) cho worktree hiện tại và một dòng tóm tắt cho mỗi worktree khác.
 8. `--no-gh` bỏ truy vấn PR; `--dry-run` in file sẽ ghi ra stdout và không ghi Store.
 9. Thành công: in đúng một dòng `saved <id>` ra stdout, cảnh báo ra stderr, mã 0, `status: open`.
+10. KHI Body chứa đường dẫn chỉ tồn tại trong phiên viết (scratchpad, `/tmp/claude-…`), THÌ `save` PHẢI cảnh báo `temporary-path` ở đúng dòng (vẫn lưu).
 
 ### R6. Lệnh `list` `[M1]`
 
@@ -267,13 +269,15 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 1. `cairn hook session-start` PHẢI đọc JSON từ stdin, dùng trường `cwd` nếu có, ngược lại cwd tiến trình.
 2. Hook PHẢI đăng ký với matcher `startup|clear` (không chạy khi resume/compact phiên cũ — phiên đó vẫn còn ngữ cảnh).
-3. KHI Dự án có handoff `status: open` tuổi ≤ `CAIRN_HOOK_MAX_AGE` (mặc định `7d`), THÌ PHẢI chọn bản cùng branch hiện tại nếu có, ngược lại bản mới nhất (mỗi phiên có thể là một worktree/branch mới nên không đòi khớp branch), in JSON `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": <resume --brief>}}` ra stdout và cập nhật status như R9.3.
+3. KHI nguồn là `clear`, hoặc handoff `open` được chọn (cùng branch nếu có, ngược lại mới nhất; tuổi ≤ `CAIRN_HOOK_MAX_AGE`, mặc định `7d`) được lưu trong `CAIRN_HOOK_FULL_WINDOW` (mặc định `1h`), THÌ PHẢI in JSON `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": <resume --brief>}}` và cập nhật status như R9.3. Lý do (nhật ký dùng thật 2026-11-09 → 16): 6/7 lần chèn đầy đủ lúc mở phiên rơi vào phiên làm việc khác và khiến handoff bị đánh dấu `resumed` oan.
 4. Ngược lại PHẢI không in gì ra stdout.
 5. `additionalContext` PHẢI ≤ 9 000 ký tự (giới hạn của Claude Code là 10 000); dài hơn thì cắt và thêm `[truncated — run: cairn show <id>]`.
 6. KHÔNG ĐƯỢC gọi `gh` hay lệnh mạng.
 7. PHẢI luôn thoát mã 0, hoàn thành ≤ 2 giây với repo ≤ 10 worktree; lỗi chỉ ra stderr.
 8. `CAIRN_HOOK=off` tắt hook.
 9. KHI Dự án còn handoff `open` khác trong hạn, THÌ preamble PHẢI liệt kê chúng (Task hoặc ID, title) và cách đổi: `/cairn:resume <task>`; các bản đó giữ `open`.
+10. Ngoài trường hợp R13.3, KHI Dự án có handoff `open` trong hạn, THÌ hook PHẢI chỉ chèn một thông báo ngắn liệt kê chúng (Task hoặc ID, tuổi, title) kèm lệnh `cairn resume --dir <dir> <task>` để agent tự nạp khi yêu cầu của người dùng thuộc một task trong đó; KHÔNG ĐƯỢC đổi status.
+11. Plugin PHẢI đăng ký hook `UserPromptSubmit` gọi `cairn hook prompt-submit`: KHI tin nhắn chứa Task (nguyên từ, không phân biệt hoa thường) hoặc ID của một handoff `open` trong hạn, THÌ PHẢI chèn handoff đó đầy đủ như R13.3 (với `hookEventName` `UserPromptSubmit`) và đánh dấu `resumed`; không khớp thì không in gì. R13.6–R13.8 áp dụng.
 
 ### R14. Vòng đời và tự dọn `[M1]`
 
