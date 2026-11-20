@@ -57,9 +57,9 @@ Every route, `npx` included, runs the same Python code, so `python3` 3.9+ must b
    ```
    or just say "save context", "running out of quota", "lưu ngữ cảnh". The agent replies with
    the handoff ID, for example `saved 20261109-083012-proj-268`.
-2. **Resume.** Open a new session in the same project, on any account. The handoff is already
-   in context; say "continue PROJ-268" and the agent summarises the goal, what is done and the
-   next step.
+2. **Resume.** Open a new session in the same project, on any account. cairn lists the open
+   handoffs; mention the task ("continue PROJ-268", `/tf:build PROJ-268`) and that handoff is
+   loaded, then the agent summarises the goal, what is done and the next step.
 3. **Look around** from a terminal:
    ```bash
    cairn list          # what is saved for this project
@@ -80,7 +80,8 @@ Hooks run by themselves:
 
 | Hook | When | What it does |
 |---|---|---|
-| `SessionStart` | new session or `/clear` | Injects the project's newest open handoff (preferring the current branch) with its drift report, lists the other open ones, and marks the injected one `resumed`. |
+| `SessionStart` | new session or `/clear` | Lists the project's open handoffs in a short notice, without loading or marking any. After `/clear`, or when the newest was saved in the last hour, it loads that one in full instead. |
+| `UserPromptSubmit` | each message you send | When the message names an open handoff's task or ID (`continue PROJ-268`, `/tf:build PROJ-268`), loads that handoff in full with its drift report and marks it `resumed`. |
 | `PreCompact` | before context compaction | Asks the summary to keep the goal, decisions, failed attempts, next steps and resources. |
 | `SessionStart` (compact) | after compaction | Shows one line suggesting `/cairn:handoff` when nothing was saved in the last 2 hours. |
 
@@ -220,10 +221,17 @@ API change merged in #633; App rounding fix open in #190.
 - [ ] Run the price backfill on prod after deploy (dry run first)
 
 ## Decisions
-- Discount lives in the pricing service, not the API layer: the App calls it too.
+- Discount lives in the pricing service, not the API layer: the App calls it too (PO, comment 1042).
 
 ## Tried / didn't work
 - Rounding in the API layer double-rounded prices; abandoned.
+
+## User rules & preferences
+- "Fix fast, skip unit tests; I review in the browser."
+
+## Environment / how to run
+- DB `app_db_proj_268`, cloned from the latest dev dump because dev has the bulk-order data.
+- `pnpm dev` (port 3000); log in to the staging admin again in Chrome before e2e.
 
 ## Open questions
 - Does the discount apply before or after tax?
@@ -243,7 +251,8 @@ API change merged in #633; App rounding fix open in #190.
 | `Next steps` written as list items | Required |
 | No likely secrets (or use `--redact`) | Required |
 | At most 12,000 characters | Required |
-| `Decisions`, `Tried / didn't work`, `Open questions`, `Key files` | Warning if missing |
+| `Decisions` (with who decided), `Tried / didn't work`, `User rules & preferences`, `Environment / how to run`, `Open questions`, `Key files` | Warning if missing |
+| Paths that only exist in the writing session (scratchpad, `/tmp/claude-…`) | Warning |
 | More than 6,000 characters | Warning |
 
 `Workspace` lines labelled `worktree` (a git checkout) or `pipeline` (a folder) are recorded at
@@ -291,6 +300,7 @@ session A                                   session B (new account, new day, new
 | `CAIRN_HOME` | `~/.cairn` | Root folder for all Stores |
 | `CAIRN_HOOK` | on | `off` disables the `SessionStart` hook |
 | `CAIRN_HOOK_MAX_AGE` | `7d` | Ignore open handoffs older than this (`d`, `h`, `m`) |
+| `CAIRN_HOOK_FULL_WINDOW` | `1h` | At session start, load a handoff this recent in full instead of listing it |
 | `CAIRN_KEEP_RESUMED` | `7d` | Remove resumed handoffs after this long |
 | `CAIRN_KEEP_OPEN` | `30d` | Remove handoffs nobody resumed after this long |
 | `CAIRN_NUDGE` | on | `off` disables the compaction hooks |

@@ -25,6 +25,16 @@ Rules:
 - Workspace: list every worktree and pipeline/run directory this task uses, with paths relative
   to the project directory, so the next session knows where to continue and cairn can check
   them for changes.
+- The next session has none of this conversation. Before writing, scan the whole conversation
+  for what it would otherwise have to rediscover or ask again:
+  - instructions the user gave that still apply (work mode, test policy, writing style, how to
+    address people, UI rules): put them under `User rules & preferences`, quoted briefly;
+  - how to bring the work back up (data source and why, services, ports, logins to redo, launch
+    commands, ids of stopped background runs): put them under `Environment / how to run`;
+  - who made each decision (the user, the PO with a comment id or link, a reviewer).
+- Never point at paths that only exist for this session (scratchpad, /tmp/claude-...): copy the
+  file into the project first (for example the pipeline folder) and point there. cairn warns
+  about such paths.
 
 Steps:
 1. Fill the template below from this conversation. Replace every `<...>` and remove the
@@ -58,16 +68,26 @@ Template:
 - [ ] <first step>
 
 ## Decisions
-<!-- each decision with its reason -->
+<!-- each decision, its reason, and who made it (user, PO with a link or comment id, reviewer);
+the next agent must not change it without asking -->
 
 ## Tried / didn't work
 <!-- approaches that failed and why, so they are not retried -->
+
+## User rules & preferences
+<!-- instructions the user gave in this conversation that still apply, quoted briefly:
+work mode (e.g. "fix fast, no unit tests"), writing style, how to address people, UI rules -->
+
+## Environment / how to run
+<!-- how to bring the work back up: where data comes from and why (e.g. which DB dump),
+services and ports, logins the user must redo, launch commands, ids of stopped runs -->
 
 ## Open questions
 <!-- questions only the user can answer -->
 
 ## Key files
-<!-- paths that matter, one per line -->
+<!-- paths that matter, one per line; for files in a temporary worktree give repo, branch
+and PR instead, since the worktree may be deleted -->
 
 ## Workspace
 <!-- one "- label: value" per line; cairn checks worktree and pipeline paths, e.g.

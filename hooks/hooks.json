@@ -1,5 +1,5 @@
 {
-  "description": "cairn: inject the open handoff at session start; keep reasoning through compaction",
+  "description": "cairn: list open handoffs at session start, load the one a message names, keep reasoning through compaction",
   "hooks": {
     "SessionStart": [
       {
@@ -8,7 +8,10 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
-            "args": ["hook", "session-start"],
+            "args": [
+              "hook",
+              "session-start"
+            ],
             "timeout": 10
           }
         ]
@@ -19,7 +22,10 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
-            "args": ["hook", "post-compact"],
+            "args": [
+              "hook",
+              "post-compact"
+            ],
             "timeout": 10
           }
         ]
@@ -32,7 +38,25 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
-            "args": ["hook", "pre-compact"],
+            "args": [
+              "hook",
+              "pre-compact"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/cairn",
+            "args": [
+              "hook",
+              "prompt-submit"
+            ],
             "timeout": 10
           }
         ]

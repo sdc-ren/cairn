@@ -30,6 +30,12 @@ Callback route exchanges the code.
 ## Tried / didn't work
 - next-auth adapter: conflicts with the custom user table.
 
+## User rules & preferences
+- "Keep PR descriptions short."
+
+## Environment / how to run
+- `pnpm dev` on port 3000; Google OAuth needs the staging client id.
+
 ## Open questions
 - Cookie lifetime 7d or 30d?
 

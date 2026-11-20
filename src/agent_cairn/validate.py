@@ -23,12 +23,15 @@ from agent_cairn.constants import (
     RULE_MISSING_TITLE,
     RULE_NEXT_STEPS_NO_ITEMS,
     RULE_RESERVED_MARKER,
+    RULE_TEMPORARY_PATH,
     SECTION_ALIASES,
+    TEMPORARY_PATH_PATTERN,
     WARNING,
 )
 
 _LIST_ITEM = re.compile(r"^\s*(?:[-*]|\d+\.)\s+\S", re.MULTILINE)
 _PLACEHOLDER_TITLE = re.compile(r"^<[^>]*>$")
+_TEMPORARY_PATH = re.compile(TEMPORARY_PATH_PATTERN)
 
 
 @dataclass(frozen=True)
@@ -71,6 +74,13 @@ def _check_recommended(body: str) -> list[Violation]:
         for name in RECOMMENDED_SECTIONS
         if name.casefold() not in present
     ]
+    for number, line in enumerate(body.split("\n"), start=1):
+        if _TEMPORARY_PATH.search(line):
+            message = (
+                "temporary path: it will not exist in a new session; "
+                "copy the file into the project and point there"
+            )
+            found.append(Violation(RULE_TEMPORARY_PATH, message, number, WARNING))
     if len(body) > LONG_BODY_CHARS:
         message = f"body has {len(body)} characters; above {LONG_BODY_CHARS} it gets hard to read"
         found.append(Violation(RULE_BODY_LONG, message, level=WARNING))

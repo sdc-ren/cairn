@@ -18,6 +18,7 @@ META_ORDER = (
     "cairn_version",
     "task",
     "session_id",
+    "transcript",
     "resumed_at",
     "resume_count",
 )
@@ -39,7 +40,17 @@ RULE_RESERVED_MARKER = "reserved-marker"
 RULE_MISSING_RECOMMENDED = "missing-recommended"
 RULE_BODY_LONG = "body-long"
 LONG_BODY_CHARS = 6_000
-RECOMMENDED_SECTIONS = ("Decisions", "Tried / didn't work", "Open questions", "Key files")
+RECOMMENDED_SECTIONS = (
+    "Decisions",
+    "Tried / didn't work",
+    "User rules & preferences",
+    "Environment / how to run",
+    "Open questions",
+    "Key files",
+)
+RULE_TEMPORARY_PATH = "temporary-path"
+# Paths that only exist for the session that wrote them (Claude Code scratchpads, tmp dirs).
+TEMPORARY_PATH_PATTERN = r"(?:/private)?/tmp/claude-[^\s`)]*|\bscratchpad/"
 SECTION_ALIASES = {"tried": "tried / didn't work", "didn't work": "tried / didn't work"}
 ERROR = "error"
 WARNING = "warning"
@@ -126,3 +137,13 @@ CLAUDE_DIR = ".claude"
 SKILLS_DIR = "skills"
 SKILL_FILE = "SKILL.md"
 CLIPBOARD_TIMEOUT_SECONDS = 5
+
+# Session start, see R13.3, R13.10 and R13.11
+FULL_WINDOW_ENV = "CAIRN_HOOK_FULL_WINDOW"
+FULL_WINDOW_DEFAULT = "1h"
+SOURCE_CLEAR = "clear"
+NOTICE_ASSET = "notice.md"
+PROMPT_EVENT_NAME = "UserPromptSubmit"
+CLAUDE_HOME = ".claude"
+CLAUDE_PROJECTS = "projects"
+TRANSCRIPT_SUFFIX = ".jsonl"

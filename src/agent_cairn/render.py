@@ -10,17 +10,19 @@ from agent_cairn import __version__, assets, capture, document, timeutil
 from agent_cairn.constants import (
     CAPTURED_HEADING,
     LIST_TITLE_MAX_CHARS,
+    NOTICE_ASSET,
     PRS_UNAVAILABLE,
     RESOURCE_WORKTREE,
     SHORT_SHA_CHARS,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from datetime import datetime
+    from pathlib import Path
 
     from agent_cairn.capture import OtherWorktree, RepoState, Resource, WorktreeState
-    from agent_cairn.document import Handoff
+    from agent_cairn.document import Handoff, MetaValue
     from agent_cairn.drift import Drift
     from agent_cairn.gh import PullRequest
 
@@ -129,7 +131,18 @@ def resume(handoff: Handoff, drift: Drift, *, brief: bool, others: Sequence[Hand
         captured=captured,
         others=_others_block(others),
         already=already,
+        transcript=_transcript_line(meta),
     ).rstrip("\n")
+
+
+def _transcript_line(meta: Mapping[str, MetaValue]) -> str:
+    transcript = meta.get("transcript")
+    if not transcript:
+        return ""
+    return (
+        f"If a detail you need is missing, the session that wrote this handoff is recorded in\n"
+        f"{transcript} (JSONL); search it for the detail instead of reading it all.\n"
+    )
 
 
 def _others_block(others: Sequence[Handoff]) -> str:
@@ -185,3 +198,14 @@ def resume_json(handoff: Handoff, drift: Drift) -> str:
         },
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def notice(handoffs: Sequence[Handoff], *, now: datetime, cwd: Path) -> str:
+    """Render the short session-start notice listing open handoffs (R13.10)."""
+    rows = []
+    for handoff in handoffs:
+        meta = handoff.meta
+        name = meta.get("task") or meta.get("id")
+        age = timeutil.age(timeutil.parse_iso(str(meta.get("created_at"))), now)
+        rows.append(f"- {name} · {age} · {meta.get('title', '')}")
+    return assets.fill(NOTICE_ASSET, rows="\n".join(rows), dir=str(cwd)).rstrip("\n")
