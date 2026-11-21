@@ -7,8 +7,8 @@
   },
   "resume": {
     "name": "resume",
-    "description": "Continue work from a cairn handoff of this project, or list the open ones to pick from. Use when the user wants to pick up previous work or asks what is unfinished: \"resume\", \"continue where we left off\", \"resume PROJ-268\", \"what tasks are open\", \"tiếp tục việc hôm qua\", \"làm tiếp\", \"đọc handoff\", \"còn task nào đang dở\".",
-    "argument-hint": "[task or handoff id]",
-    "allowed-tools": "Bash(cairn resume *) Bash(cairn list *)"
+    "description": "Continue work from a cairn handoff of this project, list the saved ones (open and already resumed) to pick from, or clean them up. Use when the user wants to pick up previous work or asks what is unfinished: \"resume\", \"continue where we left off\", \"resume PROJ-268\", \"what tasks are open\", \"tiếp tục việc hôm qua\", \"làm tiếp\", \"đọc handoff\", \"còn task nào đang dở\", \"clean handoffs\", \"dọn handoff\".",
+    "argument-hint": "[task, handoff id, or clean]",
+    "allowed-tools": "Bash(cairn resume *) Bash(cairn list *) Bash(cairn clean *) Bash(cairn rm *)"
   }
 }

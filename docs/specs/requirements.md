@@ -193,7 +193,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 ### R6. Lệnh `list` `[M1]`
 
-1. PHẢI liệt kê handoff của Dự án, mới nhất trước, mỗi dòng: ID, Task (không có thì branch, không có nữa thì `-`), status, tuổi (`2h ago`), title (cắt 60 ký tự + `…`).
+1. PHẢI liệt kê handoff của Dự án, mới nhất trước, mỗi dòng: ID, Task (không có thì branch, không có nữa thì `-`), status, tuổi (`2h ago`), lần resume gần nhất (`5m ago`, `(2x)` nếu nhiều lần, `-` nếu chưa), title (cắt 60 ký tự + `…`).
 2. Mặc định 20 dòng; `--limit N`; `--all`.
 3. `--branch <b>` lọc branch; `--here` lọc branch hiện tại; `--status open|resumed`.
 4. `--json` in mảng frontmatter.
@@ -290,8 +290,9 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 5. Mỗi handoff bị xoá PHẢI in một dòng `cairn: removed <id> (<replaced|expired>)` ra stderr; trong hook chỉ ghi stderr, stdout giữ đúng R13.3–R13.4.
 6. `save --dry-run` KHÔNG ĐƯỢC xoá gì.
 7. Handoff vừa được resume KHÔNG ĐƯỢC bị xoá trong chính lệnh đó.
-8. Ngoài R14.1–R14.3 và R14.9, không cơ chế nào được xoá handoff.
+8. Ngoài R14.1–R14.3, R14.9 và R14.10, không cơ chế nào được xoá handoff.
 9. `cairn rm <ref>…` xoá tay sau khi hỏi `delete N handoff(s)? [y/N]`; `--yes` bỏ hỏi; stdin không phải TTY và không `--yes` → từ chối, mã 2. `[M2]`
+10. `cairn clean` xoá hàng loạt: mặc định các handoff `resumed`; `--status open|resumed|all`; `--older-than <dur>` chỉ lấy bản không được đụng tới (resume, không thì tạo) lâu hơn; in bảng các bản sẽ xoá; `--dry-run` không xoá; hỏi xác nhận như R14.9; không có gì thì in `nothing to clean`, mã 0. `[M2]`
 
 ### R15. Lệnh `doctor` `[M1]`
 
@@ -309,7 +310,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 5. Skill `resume` PHẢI tự kích hoạt khi người dùng muốn tiếp tục việc trước hoặc hỏi việc nào đang dở ("continue where we left off", "tiếp tục việc hôm qua", "làm tiếp", "còn task nào đang dở"). `[manual]`
 6. Khi hook đã chèn handoff, agent PHẢI có đủ chỉ dẫn trong preamble để tự tóm tắt mà không cần gọi skill `resume`.
 7. Người dùng KHÔNG ĐƯỢC phải chạy lệnh nào trong terminal trong luồng S1 sau khi đã cài plugin. `[manual]`
-8. KHI `/cairn:resume` không kèm task và hook chưa chèn handoff, THÌ skill PHẢI chạy `cairn list --status open`: không có → báo và cho xem 5 bản gần nhất; đúng một → resume luôn; nhiều → hiện bảng và hỏi người dùng chọn, không tự chọn. Chỉ hỏi danh sách thì hiện bảng và dừng (design D21).
+8. KHI `/cairn:resume` không kèm task, THÌ skill PHẢI chạy `cairn list` (cả `open` lẫn `resumed`), hiện bảng và hỏi người dùng chọn, kể cả khi chỉ có một bản; không tự chọn. Nếu hook đã chèn handoff thì nêu tên và đề xuất nó làm lựa chọn mặc định. Không có → báo và dừng. Chỉ hỏi danh sách thì hiện bảng và dừng. `/cairn:resume clean` chạy `cairn clean --dry-run`, hỏi xác nhận rồi mới xoá (design D21).
 
 ---
 
@@ -317,7 +318,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 ### R17. Quy ước CLI `[M1]`
 
-1. `cairn <command> [options] [args]`; lệnh M1: `template`, `capture`, `save`, `list`, `show`, `resume`, `doctor`, `hook` (`session-start`, `pre-compact`, `post-compact`), `version`; M2 thêm `rm`, `init`, `prompt`.
+1. `cairn <command> [options] [args]`; lệnh M1: `template`, `capture`, `save`, `list`, `show`, `resume`, `doctor`, `hook` (`session-start`, `pre-compact`, `post-compact`), `version`; M2 thêm `rm`, `clean`, `init`, `prompt`.
 2. `cairn`, `-h`, `--help` in usage ra stdout, mã 0; `cairn <cmd> -h` in help lệnh.
 3. `cairn version` / `--version` in `cairn <version>`, mã 0.
 4. Dữ liệu ra stdout; cảnh báo/lỗi ra stderr.
