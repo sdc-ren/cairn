@@ -24,6 +24,7 @@ from agent_cairn import (
 )
 from agent_cairn.constants import (
     AGENT_ENV,
+    CLEAN_ALL,
     LIST_DEFAULT_LIMIT,
     NO_HANDOFFS_MESSAGE,
     SKILL_NAMES,
@@ -40,7 +41,7 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_INTERRUPTED = 130
 HELP_FLAGS = ("-h", "--help")
-STORE_COMMANDS = ("save", "show", "resume", "list", "capture", "doctor", "rm", "init")
+STORE_COMMANDS = ("save", "show", "resume", "list", "capture", "doctor", "rm", "clean", "init")
 AGENT_CLAUDE = "claude"
 AGENT_AGENTS_MD = "agents-md"
 
@@ -111,7 +112,7 @@ def _add_reading(command: Callable[[str, str], argparse.ArgumentParser]) -> None
 
 
 def _add_maintenance(command: Callable[[str, str], argparse.ArgumentParser]) -> None:
-    """Declare capture, doctor, rm, init, prompt, template, hook, version."""
+    """Declare capture, doctor, rm, clean, init, prompt, template, hook, version."""
     snapshot = command("capture", "print the git state cairn would attach to a handoff")
     snapshot.add_argument("--json", action="store_true", help="print JSON")
     snapshot.add_argument("--no-gh", action="store_true", help="do not ask gh for pull requests")
@@ -119,6 +120,18 @@ def _add_maintenance(command: Callable[[str, str], argparse.ArgumentParser]) -> 
     remove = command("rm", "delete handoffs after confirmation")
     remove.add_argument("refs", nargs="+", help="tasks, handoff ids or id prefixes")
     remove.add_argument("--yes", action="store_true", help="do not ask for confirmation")
+    sweep = command("clean", "delete saved handoffs in bulk (default: the resumed ones)")
+    sweep.add_argument(
+        "--status",
+        choices=[STATUS_RESUMED, STATUS_OPEN, CLEAN_ALL],
+        default=STATUS_RESUMED,
+        help="which handoffs to delete (default: resumed)",
+    )
+    sweep.add_argument(
+        "--older-than", metavar="AGE", help="only those untouched for longer, e.g. 3d, 12h"
+    )
+    sweep.add_argument("--dry-run", action="store_true", help="list them, delete nothing")
+    sweep.add_argument("--yes", action="store_true", help="do not ask for confirmation")
     init = command("init", "install cairn for setups without the Claude Code plugin")
     init.add_argument("--agent", choices=[AGENT_CLAUDE, AGENT_AGENTS_MD], default=AGENT_CLAUDE)
     init.add_argument("--global", dest="global_scope", action="store_true", help="~/.claude/skills")
@@ -167,6 +180,8 @@ def _store_command(args: argparse.Namespace, cwd: Path) -> int:
         out.emit(commands.capture_report(cwd, use_gh=not args.no_gh, as_json=args.json))
     elif args.command == "rm":
         commands.remove(cwd, args.refs, confirmed=args.yes)
+    elif args.command == "clean":
+        _clean(args, cwd)
     elif args.command == "init":
         _init(args, cwd)
     else:
@@ -213,6 +228,22 @@ def _print_list(args: argparse.Namespace, cwd: Path) -> None:
         out.emit(render.handoff_table(found, now=timeutil.now_utc()))
     else:
         out.emit(NO_HANDOFFS_MESSAGE)
+
+
+def _clean(args: argparse.Namespace, cwd: Path) -> None:
+    try:
+        older = timeutil.parse_duration(args.older_than) if args.older_than else None
+    except ValueError as err:
+        raise UsageError(str(err)) from err
+    chosen = commands.clean_candidates(cwd, commands.CleanOptions(args.status, older))
+    if not chosen:
+        out.emit("nothing to clean")
+        return
+    out.emit(render.handoff_table(chosen, now=timeutil.now_utc()))
+    if args.dry_run:
+        out.emit(f"would delete {len(chosen)} handoff(s); run again without --dry-run")
+        return
+    commands.clean(cwd, chosen, confirmed=args.yes)
 
 
 def _print_doctor(cwd: Path) -> int:

@@ -307,7 +307,7 @@ def test_list_prints_table_newest_first(repo, monkeypatch, capsys, clock):
 
     lines = capsys.readouterr().out.splitlines()
     assert code == 0
-    assert lines[0].split() == ["ID", "TASK", "STATUS", "AGE", "TITLE"]
+    assert lines[0].split() == ["ID", "TASK", "STATUS", "AGE", "RESUMED", "TITLE"]
     assert lines[1].split()[:4] == ["20261109-103012-proj-2", "PROJ-2", "open", "1h"]
     assert lines[1].endswith("…")
     assert len(lines[1].split("  ")[-1].strip()) <= 61

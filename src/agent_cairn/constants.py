@@ -25,6 +25,7 @@ META_ORDER = (
 META_INT_KEYS = frozenset({"schema", "resume_count"})
 STATUS_OPEN = "open"
 STATUS_RESUMED = "resumed"
+CLEAN_ALL = "all"  # `cairn clean --status all`: every status (R14.10)
 
 # Body rules (R5.3)
 REQUIRED_SECTIONS = ("Goal", "Current state", "Next steps")

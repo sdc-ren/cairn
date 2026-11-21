@@ -156,8 +156,11 @@ def _others_block(others: Sequence[Handoff]) -> str:
 
 
 def handoff_table(handoffs: Sequence[Handoff], *, now: datetime) -> str:
-    """Render handoffs as aligned columns: ID, task (or branch), status, age, title (R6.1)."""
-    header = ("ID", "TASK", "STATUS", "AGE", "TITLE")
+    """Render handoffs as aligned columns: ID, task, status, age, resumed, title (R6.1).
+
+    ``RESUMED`` says when a handoff was last resumed and how often (``2h ago (2x)``), or ``-``.
+    """
+    header = ("ID", "TASK", "STATUS", "AGE", "RESUMED", "TITLE")
     rows = [header, *(_table_row(handoff, now) for handoff in handoffs)]
     widths = [max(len(row[column]) for row in rows) for column in range(len(header) - 1)]
     return "\n".join(
@@ -166,7 +169,7 @@ def handoff_table(handoffs: Sequence[Handoff], *, now: datetime) -> str:
     )
 
 
-def _table_row(handoff: Handoff, now: datetime) -> tuple[str, str, str, str, str]:
+def _table_row(handoff: Handoff, now: datetime) -> tuple[str, ...]:
     meta = handoff.meta
     title = str(meta.get("title", ""))
     if len(title) > LIST_TITLE_MAX_CHARS:
@@ -177,8 +180,18 @@ def _table_row(handoff: Handoff, now: datetime) -> tuple[str, str, str, str, str
         str(meta.get("task") or meta.get("branch") or "-"),
         str(meta.get("status", "")),
         timeutil.age(created, now),
+        _resumed_cell(meta, now),
         title,
     )
+
+
+def _resumed_cell(meta: Mapping[str, MetaValue], now: datetime) -> str:
+    count = int(meta.get("resume_count", 0))
+    try:
+        when = timeutil.age(timeutil.parse_iso(str(meta.get("resumed_at"))), now)
+    except ValueError:
+        return "-"
+    return when if count <= 1 else f"{when} ({count}x)"
 
 
 def resume_json(handoff: Handoff, drift: Drift) -> str:

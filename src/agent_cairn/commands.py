@@ -27,6 +27,7 @@ from agent_cairn import (
 from agent_cairn.constants import (
     CLAUDE_HOME,
     CLAUDE_PROJECTS,
+    CLEAN_ALL,
     FULL_WINDOW_DEFAULT,
     FULL_WINDOW_ENV,
     GIT_TIMEOUT_SECONDS,
@@ -38,6 +39,7 @@ from agent_cairn.constants import (
     SHORT_SHA_CHARS,
     SOURCE_CLEAR,
     STATUS_OPEN,
+    STATUS_RESUMED,
     TEMPLATE_ASSET,
     TRANSCRIPT_SUFFIX,
 )
@@ -85,6 +87,14 @@ class ListFilter:
     status: str | None = None
     branch: str | None = None
     limit: int | None = None
+
+
+@dataclass(frozen=True)
+class CleanOptions:
+    """Flags of ``cairn clean`` (R14.10): which status, and how long untouched."""
+
+    status: str = STATUS_RESUMED
+    older_than: timedelta | None = None
 
 
 def template() -> str:
@@ -145,19 +155,49 @@ def remove(cwd: Path, refs: list[str], *, confirmed: bool) -> list[str]:
         UsageError: confirmation is needed but stdin is not a terminal.
     """
     root = store.root(cwd)
-    chosen = {
-        str(h.meta.get("id")): h for h in (resolve.by_ref(store.handoffs(root), r) for r in refs)
-    }
+    chosen = [resolve.by_ref(store.handoffs(root), ref) for ref in refs]
+    return _delete(root, chosen, confirmed=confirmed)
+
+
+def clean_candidates(cwd: Path, options: CleanOptions) -> list[Handoff]:
+    """Return the handoffs ``cairn clean`` would delete, newest first (R14.10)."""
+    now = timeutil.now_utc()
+    return [
+        handoff
+        for handoff in store.handoffs(store.root(cwd))
+        if options.status in (CLEAN_ALL, handoff.meta.get("status"))
+        and (options.older_than is None or _idle(handoff, now) > options.older_than)
+    ]
+
+
+def clean(cwd: Path, chosen: list[Handoff], *, confirmed: bool) -> list[str]:
+    """Delete ``chosen`` (from ``clean_candidates``) after confirmation (R14.10)."""
+    return _delete(store.root(cwd), chosen, confirmed=confirmed)
+
+
+def _delete(root: Path, chosen: list[Handoff], *, confirmed: bool) -> list[str]:
+    unique = {str(handoff.meta.get("id")): handoff for handoff in chosen}
+    if not unique:
+        return []
     if not confirmed:
         if not sys.stdin.isatty():
             raise UsageError("refusing to delete without --yes when stdin is not a terminal")
-        if out.ask(f"delete {len(chosen)} handoff(s)? [y/N]").casefold() not in ("y", "yes"):
+        if out.ask(f"delete {len(unique)} handoff(s)? [y/N]").casefold() not in ("y", "yes"):
             return []
     with store.lock(root):
-        for hid, handoff in chosen.items():
-            store.path_of(handoff).unlink()
+        for hid, handoff in unique.items():
+            store.path_of(handoff).unlink(missing_ok=True)
             out.note(f"removed {hid} (manual)")
-    return list(chosen)
+    return list(unique)
+
+
+def _idle(handoff: Handoff, now: datetime) -> timedelta:
+    """Time since a handoff was last resumed, or since it was saved; unreadable dates are 0."""
+    stamp = handoff.meta.get("resumed_at") or handoff.meta.get("created_at")
+    try:
+        return now - timeutil.parse_iso(str(stamp))
+    except ValueError:
+        return now - now
 
 
 def show(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Path:

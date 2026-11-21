@@ -71,7 +71,7 @@ Every route, `npx` included, runs the same Python code, so `python3` 3.9+ must b
 | Skill | Plugin name | Without plugin | What it does |
 |---|---|---|---|
 | handoff | `/cairn:handoff [title]` | `/cairn-handoff` | The agent writes the handoff from the conversation and saves it in one turn. It passes the ticket as the task when it sees one, fixes anything cairn rejects (up to 3 tries), and replies in at most 2 lines. |
-| resume | `/cairn:resume [task]` | `/cairn-resume` | Continue a handoff. With a task, opens it. Without one: uses the handoff the hook already injected; otherwise opens the only open one, or shows a table and asks which one. |
+| resume | `/cairn:resume [task\|clean]` | `/cairn-resume` | Continue a handoff. With a task, opens it. Without one: shows every saved handoff (`open` = not resumed yet, `resumed` = already continued, and when) and asks which one. `clean` lists the resumed ones, asks, then deletes them. |
 
 Both skills also trigger from plain language in English or Vietnamese ("handoff", "save
 context", "sắp hết quota"; "continue where we left off", "làm tiếp", "còn task nào đang dở").
@@ -125,9 +125,9 @@ cairn save --task PROJ-268 --file handoff.md   # then save it
 | `--json` | Frontmatter of each handoff as JSON |
 
 ```
-ID                        TASK      STATUS   AGE      TITLE
-20261109-100105-proj-274  PROJ-274  resumed  40m ago  QC round 2 fixes
-20261109-095106-proj-268  PROJ-268  open     50m ago  Checkout: bulk discount
+ID                        TASK      STATUS   AGE      RESUMED  TITLE
+20261109-100105-proj-274  PROJ-274  resumed  40m ago  5m ago   QC round 2 fixes
+20261109-095106-proj-268  PROJ-268  open     50m ago  -        Checkout: bulk discount
 ```
 
 ### `cairn show [<ref>]` — print a handoff file
@@ -153,6 +153,23 @@ Prints the handoff with instructions for the agent and a drift report, then mark
 
 Asks `delete N handoff(s)? [y/N]` first. Pass `--yes` to skip the question; it is required when
 stdin is not a terminal. If any reference matches nothing, nothing is deleted.
+
+### `cairn clean` — delete handoffs in bulk
+
+Prints the handoffs it would delete, then asks `delete N handoff(s)? [y/N]` like `rm`.
+Without options it deletes the `resumed` ones. Prints `nothing to clean` when none match.
+
+| Option | Effect |
+|---|---|
+| `--status resumed\|open\|all` | Which handoffs to delete (default `resumed`) |
+| `--older-than AGE` | Only those not resumed (or, if never resumed, saved) within `AGE`, e.g. `3d` |
+| `--dry-run` | Show the table only; delete nothing |
+| `--yes` | Do not ask; required when stdin is not a terminal |
+
+```bash
+cairn clean --dry-run                    # what would go
+cairn clean --status all --older-than 14d
+```
 
 ### `cairn capture` — show the git state cairn would attach
 

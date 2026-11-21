@@ -188,12 +188,13 @@ def test_preamble_tells_agent_to_summarise_without_the_skill():
 
 
 @pytest.mark.req("R16.8")
-def test_resume_skill_lists_open_handoffs_to_choose_from():
+def test_resume_skill_lists_every_handoff_to_choose_from():
     body = (ROOT_DIR / "skills/resume/SKILL.md").read_text()
 
-    assert "cairn list --dir DIR --status open" in body
-    assert "ask the user which task to continue" in body
-    assert "exactly one" in body
+    assert "run `cairn list --dir DIR` and show the table" in body
+    assert "ask the user which task" in body
+    assert "even when only one is listed" in body
+    assert "cairn clean --dir DIR --dry-run" in body
 
 
 @pytest.mark.req("R2.8")

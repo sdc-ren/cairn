@@ -8,6 +8,8 @@ All notable changes are listed here. The format follows
 
 ### Changed
 
+- `/cairn:resume` without a task always shows every saved handoff, open and already resumed,
+  and asks which to continue, even when there is only one or the hook already loaded one.
 - A new session no longer loads the newest handoff by default: it gets a short list of open
   handoffs, and the one you mention by task or ID in your message is loaded (new
   `UserPromptSubmit` hook). Loading in full still happens after `/clear` or when the handoff is
@@ -18,6 +20,10 @@ All notable changes are listed here. The format follows
 
 ### Added
 
+- `cairn clean` deletes saved handoffs in bulk: the `resumed` ones by default, or
+  `--status open|all`, optionally `--older-than 3d`; it shows the table and asks first
+  (`--dry-run`, `--yes`). `/cairn:resume clean` runs it from Claude Code.
+- `cairn list` has a `RESUMED` column: when a handoff was last resumed, and how often.
 - `save` warns about paths that only exist in the writing session (scratchpad, `/tmp/claude-…`).
 - `save --session` records the writing session's transcript path; the resume text tells the
   agent to search it when a detail is missing.
