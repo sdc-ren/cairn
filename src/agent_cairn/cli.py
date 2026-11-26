@@ -16,9 +16,11 @@ from agent_cairn import (
     doctor,
     gitio,
     hook,
+    importer,
     integrations,
     out,
     render,
+    share,
     store,
     timeutil,
 )
@@ -41,7 +43,19 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_INTERRUPTED = 130
 HELP_FLAGS = ("-h", "--help")
-STORE_COMMANDS = ("save", "show", "resume", "list", "capture", "doctor", "rm", "clean", "init")
+STORE_COMMANDS = (
+    "save",
+    "show",
+    "resume",
+    "share",
+    "import",
+    "list",
+    "capture",
+    "doctor",
+    "rm",
+    "clean",
+    "init",
+)
 AGENT_CLAUDE = "claude"
 AGENT_AGENTS_MD = "agents-md"
 
@@ -95,7 +109,13 @@ def _add_reading(command: Callable[[str, str], argparse.ArgumentParser]) -> None
     resume.add_argument("--brief", action="store_true", help="leave out the captured state")
     resume.add_argument("--json", action="store_true", help="print JSON")
     resume.add_argument("--copy", action="store_true", help="also copy the output to the clipboard")
-    for selector in (show, resume):
+    sharing = command("share", "pack a handoff for someone else: no local paths, files attached")
+    sharing.add_argument("--out", help="write the bundle to OUT (default: ./<id>.cairn.tgz)")
+    sharing.add_argument("--redact", action="store_true", help="mask secrets instead of failing")
+    sharing.add_argument("--no-gh", action="store_true", help="do not ask gh for pull requests")
+    unpack = command("import", "save a bundle from `cairn share` as a handoff of this project")
+    unpack.add_argument("bundle", help="the .cairn.tgz file")
+    for selector in (show, resume, sharing):
         selector.add_argument("ref", nargs="?", help="task, handoff id or id prefix")
         selector.add_argument("--any-branch", action="store_true", help="ignore the branch")
     listing = command("list", "list the project's handoffs, newest first")
@@ -155,6 +175,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         out.emit(integrations.prompt(args.skill))
     elif args.command == "hook":
         return hook.run(args.event)
+    elif args.command in ("share", "import"):
+        _share(args, Path(args.dir) if args.dir else Path.cwd())
     else:
         return _store_command(args, Path(args.dir) if args.dir else Path.cwd())
     return EXIT_OK
@@ -187,6 +209,16 @@ def _store_command(args: argparse.Namespace, cwd: Path) -> int:
     else:
         return _print_doctor(cwd)
     return EXIT_OK
+
+
+def _share(args: argparse.Namespace, cwd: Path) -> None:
+    if args.command == "import":
+        out.emit(importer.import_bundle(Path(args.bundle), cwd))
+        return
+    handoff = commands.select(cwd, args.ref, any_branch=args.any_branch)
+    target = Path(args.out) if args.out else None
+    bundle = share.share(handoff, cwd, share.ShareOptions(target, args.redact, not args.no_gh))
+    out.emit(f"shared {bundle}")
 
 
 def _init(args: argparse.Namespace, cwd: Path) -> None:

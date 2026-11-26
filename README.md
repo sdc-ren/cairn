@@ -149,6 +149,34 @@ Prints the handoff with instructions for the agent and a drift report, then mark
 | `--copy` | Also copy the output to the clipboard (pbcopy, wl-copy or xclip), e.g. for another agent |
 | `--any-branch` | Ignore the current branch when choosing |
 
+### `cairn share [<ref>]` — send a handoff to someone else
+
+Writes `<id>.cairn.tgz`, a bundle another person's agent can continue from without access to
+your machine:
+
+- `HANDOFF.md`: the handoff with your paths rewritten (project paths become relative, your home
+  becomes `~`), no session or transcript, and a captured state listing each worktree's remote,
+  branch, full HEAD (and whether it is pushed), open PRs, and restore steps.
+- `patches/`: the uncommitted work of each worktree, new files included, for `git apply`.
+- `attachments/`: files git does not carry: the Workspace `pipeline` folders and the `Key files`
+  that are ignored or outside git. Files outside the project are listed as not attached.
+
+It refuses when an attachment or patch holds a likely secret, and warns about commits that
+are not on any remote.
+
+| Option | Effect |
+|---|---|
+| `--out FILE` | Write the bundle to FILE |
+| `--redact` | Mask likely secrets instead of refusing |
+| `--no-gh` | Do not ask gh for pull requests |
+| `--any-branch` | Ignore the current branch when choosing |
+
+### `cairn import <file>` — receive a shared handoff
+
+Checks every member of the bundle, unpacks it into `.cairn-shared/<id>/` (git-ignored) and
+saves the handoff as open for this project. Then run `/cairn:resume <task>`; the agent follows
+the restore steps (check out the commit, apply the patch, copy the attachments) first.
+
 ### `cairn rm <ref>...` — delete handoffs
 
 Asks `delete N handoff(s)? [y/N]` first. Pass `--yes` to skip the question; it is required when

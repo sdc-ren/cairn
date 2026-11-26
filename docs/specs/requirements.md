@@ -393,6 +393,17 @@ Bối cảnh: Claude Code không có hook cho "sắp hết quota" hay "ngữ c�
 3. `verification.md` PHẢI có nhật ký dùng thật, mỗi lần resume một dòng: ngày, ID, nguồn (`hook`/`skill`), số lần người dùng phải giải thích lại, bước đầu tiên agent đề xuất có đúng không (`Y`/`N`), thông tin bị thiếu, hook có gây phiền không. `[manual]`
 4. Ngưỡng đạt MVP: kịch bản chuẩn đạt ≥ 7/8 trong 3 lần chạy liên tiếp; nhật ký ≥ 10 lần resume với ≥ 80% bước đầu đúng và trung bình ≤ 1 lần giải thích lại. `[manual]`
 
+### R25. Chia sẻ handoff cho người khác `[M2]`
+
+**User story:** Là Dev, tôi muốn gửi handoff cho đồng nghiệp để agent của họ làm tiếp được, mà không lộ đường dẫn và file trên máy tôi.
+
+1. `cairn share [<ref>]` PHẢI ghi một bundle `.cairn.tgz` (mặc định `./<id>.cairn.tgz`, `--out` để đổi) gồm `HANDOFF.md`, `attachments/`, `patches/`; in `shared <đường dẫn>`.
+2. `HANDOFF.md` KHÔNG ĐƯỢC chứa đường dẫn tuyệt đối của người gửi: đường dẫn trong Dự án thành tương đối, thư mục home thành `~`; frontmatter bỏ `worktree`, `session_id`, `transcript`, `resumed_at`, `resume_count`, đặt lại `status: open`, thêm `shared_at`. Captured state liệt kê cho từng worktree: remote (bỏ user/token trong URL), branch, HEAD đầy đủ, HEAD đã có trên remote chưa, PR mở, patch; danh sách file đính kèm, file không đính kèm kèm lý do, và các bước khôi phục.
+3. Đính kèm: mọi file trong các thư mục `pipeline` của Workspace, và các file ở `Key files` mà git không mang theo (bị ignore hoặc ngoài git). File ngoài Dự án, không tìm thấy, vượt 5 MB/file hoặc 50 MB tổng thì không đính kèm và được liệt kê kèm lý do. File văn bản đính kèm cũng được viết lại đường dẫn.
+4. Mỗi worktree có thay đổi chưa commit (kể cả file mới, trừ file bị ignore) có một patch `git apply` được; index của người dùng không bị đổi.
+5. Secret trong file đính kèm hoặc patch → từ chối, mã 3, in `file: line N: secret-<pattern>` không kèm giá trị; `--redact` thay bằng `[REDACTED:…]`.
+6. `cairn import <file>` PHẢI kiểm từng phần tử (chỉ file thường, không đường dẫn tuyệt đối, không `..`, chỉ dưới `attachments/`, `patches/`), giải nén vào `.cairn-shared/<id>/` (có `.gitignore` chặn commit), lưu handoff `open` vào Store với đường dẫn của máy người nhận; bundle đã import → mã 2.
+
 ## 9. Definition of Done
 
 ### M0 — bộ khung 0.0.1

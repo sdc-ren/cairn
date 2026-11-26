@@ -14,6 +14,7 @@ from agent_cairn.constants import (
     CAPTURED_JSON_CLOSE,
     CAPTURED_JSON_OPEN,
     CAPTURED_MARKER,
+    KEY_FILES_SECTION,
     META_INT_KEYS,
     META_ORDER,
     WORKSPACE_SECTION,
@@ -37,6 +38,8 @@ _MARKER_LINE = re.compile(rf"^{re.escape(CAPTURED_MARKER)}$", re.MULTILINE)
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 JSON_SAFE_CLOSE = "--\\u003e"
 _ENTRY = re.compile(r"^\s*[-*]\s+`?([A-Za-z][\w-]*)`?\s*:\s*(.+?)\s*$")
+# "- `path/to/file.ts:42` — note": the path, without list marker, backticks or line number.
+_KEY_FILE = re.compile(r"^\s*(?:[-*]\s+)?`?([^\s`]+?)(?::\d+)?`?(?:[\s,;:].*)?$")
 _JSON_LINE = re.compile(
     rf"^{re.escape(CAPTURED_JSON_OPEN)}(.*){re.escape(CAPTURED_JSON_CLOSE)}$", re.MULTILINE
 )
@@ -139,6 +142,20 @@ def workspace_entries(body: str) -> list[tuple[str, str]]:
         if section.name.casefold() == WORKSPACE_SECTION.casefold():
             matches = (_ENTRY.match(line) for line in strip_comments(section.text).splitlines())
             return [(m.group(1).casefold(), m.group(2).strip("`")) for m in matches if m]
+    return []
+
+
+def key_files(body: str) -> list[str]:
+    """Return the path at the start of each line of the Key files section (R25.3).
+
+    A line may add a note after the path (``app/x.ts — the route``) or a line number
+    (``app/x.ts:42``); both are dropped.
+    """
+    for section in sections(body):
+        if section.name.casefold() == KEY_FILES_SECTION.casefold():
+            lines = strip_comments(section.text).splitlines()
+            found = (_KEY_FILE.match(line) for line in lines)
+            return [m.group(1) for m in found if m]
     return []
 
 

@@ -148,3 +148,17 @@ PROMPT_EVENT_NAME = "UserPromptSubmit"
 CLAUDE_HOME = ".claude"
 CLAUDE_PROJECTS = "projects"
 TRANSCRIPT_SUFFIX = ".jsonl"
+
+# Sharing a handoff with someone else, see R25
+SHARE_DIR = ".cairn-shared"
+BUNDLE_SUFFIX = ".cairn.tgz"
+BUNDLE_HANDOFF = "HANDOFF.md"
+BUNDLE_ATTACHMENTS = "attachments"
+BUNDLE_PATCHES = "patches"
+SHARE_MAX_FILE_BYTES = 5 * 1024 * 1024
+SHARE_MAX_TOTAL_BYTES = 50 * 1024 * 1024
+SHARED_ASSET = "shared.md"
+SHARED_HEADING = "## Captured state (shared bundle — do not edit)"
+KEY_FILES_SECTION = "Key files"
+SHARED_DROPPED_META = ("worktree", "session_id", "transcript", "resumed_at", "resume_count")
+BINARY_SNIFF_BYTES = 8192

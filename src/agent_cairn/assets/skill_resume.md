@@ -1,5 +1,7 @@
 Let `DIR` be `"${CLAUDE_PROJECT_DIR}"` in every command below.
 
+0. If the user gives a `.cairn.tgz` file (a bundle someone shared), run
+   `cairn import --dir DIR <file>` first, then continue with the task it prints.
 1. If an `ARGUMENTS:` line names a task or id (anything but `clean`), run
    `cairn resume --dir DIR <task>` and go to step 4.
 2. If the arguments are `clean`, or the user wants to clean up saved handoffs ("dọn handoff",
@@ -20,5 +22,6 @@ Let `DIR` be `"${CLAUDE_PROJECT_DIR}"` in every command below.
      (or, for the block already in context, run nothing) and go to step 4.
 4. Follow the preamble in the output exactly: summarise for the user, in their language, the
    goal, what is done, open questions and the exact next step. Continue in the worktrees listed
-   under Workspace. If any drift line is a warning, wait for the user to confirm before editing
+   under Workspace. If the captured state is a shared bundle, do its "How to restore" steps
+   before the next steps. If any drift line is a warning, wait for the user to confirm before editing
    code.

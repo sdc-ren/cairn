@@ -6,6 +6,15 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `cairn share` packs a handoff for another person: your local paths are rewritten, the
+  session and transcript are left out, and the bundle carries the uncommitted work of each
+  worktree as a patch, the files git does not carry, remotes, pushed state and open PRs.
+  `cairn import` receives it. `/cairn:handoff` runs it when you say the handoff is for someone
+  else; `/cairn:resume` imports a bundle you give it.
+- The handoff skill asks for project-relative paths and a complete `Key files` list.
+
 ### Changed
 
 - `/cairn:resume` without a task always shows every saved handoff, open and already resumed,

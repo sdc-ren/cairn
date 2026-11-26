@@ -98,7 +98,7 @@ def test_skill_frontmatter_is_complete_and_user_invocable(name):
 def test_handoff_skill_saves_in_one_command_allowed_without_prompt():
     meta, body = _skill("handoff")
 
-    assert meta["allowed-tools"] == "Bash(cairn save *)"
+    assert meta["allowed-tools"] == "Bash(cairn save *) Bash(cairn share *)"
     assert 'cairn save --dir "${CLAUDE_PROJECT_DIR}" --agent claude-code' in body
     assert "--session ${CLAUDE_SESSION_ID}" in body
     assert "<<'CAIRN_EOF'" in body
