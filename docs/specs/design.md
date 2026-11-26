@@ -115,6 +115,8 @@ cairn/
 
 M2 thêm: `clipboard.py` (pbcopy → wl-copy → xclip), `integrations.py` (skill rời, AGENTS.md, `prompt`, gỡ cài); `gen_plugin.py` dùng lại `integrations.skill_text`.
 
+R25 thêm: `portable.py` (lõi thuần: viết lại đường dẫn, render captured state của bundle), `share.py` (vỏ: gom worktree, patch, file đính kèm, ghi tar), `importer.py` (vỏ: kiểm và giải nén bundle, lưu handoff); asset `shared.md`.
+
 Hướng phụ thuộc giữa các module: nguồn duy nhất là bảng `ALLOWED` trong `tests/test_imports.py`; test chặn mọi import ngoài bảng (bỏ qua import chỉ dùng cho type hint) và chặn lõi thuần import vỏ I/O. Thêm cạnh mới là thay đổi thiết kế, sửa bảng trong cùng PR.
 
 Lõi thuần (không I/O): `document`, `validate`, `secrets`, `resolve`, `render`, phần tính toán của `drift` (nhận dữ liệu git đã lấy). Vỏ I/O: `proc`, `gitio`, `gh`, `store`, `out`, `cli`, `hook`.

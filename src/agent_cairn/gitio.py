@@ -145,6 +145,44 @@ def branch_tip(cwd: Path, branch: str, *, timeout: float = GIT_TIMEOUT_SECONDS) 
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def remote_url(cwd: Path) -> str | None:
+    """Return the URL of ``origin``, else of the first remote, or None without remotes."""
+    names = _run(cwd, "remote").stdout.split()
+    if not names:
+        return None
+    name = "origin" if "origin" in names else names[0]
+    result = _run(cwd, "remote", "get-url", name)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def on_remote(cwd: Path, sha: str) -> bool:
+    """Return whether a remote-tracking branch contains commit ``sha`` (as last fetched)."""
+    result = _run(cwd, "branch", "-r", "--contains", sha, "--format=%(refname:short)")
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def is_ignored(cwd: Path, path: Path) -> bool:
+    """Return whether git ignores ``path``, so neither a commit nor a patch carries it."""
+    return _run(cwd, "check-ignore", "-q", "--", str(path)).returncode == 0
+
+
+def uncommitted_patch(cwd: Path, index: Path) -> str:
+    """Return a binary diff from HEAD to the working tree, untracked files included.
+
+    A throwaway index file ``index`` collects the changes, so the user's own index (what they
+    staged) is never touched; ignored files stay out, as with ``git add -A``.
+    """
+    env = {"GIT_INDEX_FILE": str(index)}
+    for step in (("read-tree", "HEAD"), ("add", "-A"), ("diff", "--cached", "--binary", "HEAD")):
+        result = proc.run(["git", *step], cwd=cwd, timeout=GIT_TIMEOUT_SECONDS, env=env)
+        if result.returncode != 0:
+            detail = result.stderr.strip().splitlines()[:1] or ["no error output"]
+            raise CairnError(f"git {step[0]} failed: {detail[0]}")
+    return result.stdout
+
+
 def version(cwd: Path) -> tuple[int, ...]:
     """Return git's version as numbers, such as ``(2, 39, 5)`` (R18.3)."""
     # "git version 2.39.5 (Apple Git-154)": the third word holds the number

@@ -205,6 +205,11 @@ def show(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Path:
     return store.path_of(_select(cwd, ref, any_branch=any_branch))
 
 
+def select(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Handoff:
+    """Return the handoff ``ref`` names, or the best one for ``cwd`` (R7, R8)."""
+    return _select(cwd, ref, any_branch=any_branch)
+
+
 def resume(cwd: Path, options: ResumeOptions) -> str:
     """Render the selected handoff with its drift; unless ``peek``, mark it resumed (R9)."""
     handoff = _select(cwd, options.ref, any_branch=options.any_branch)
