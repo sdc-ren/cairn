@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Trạng thái | Draft — chờ duyệt |
-| Phiên bản spec | 1.10 |
+| Phiên bản spec | 1.11 |
 | Ngày | 2026-11-09 |
 | Tài liệu liên quan | [design.md](design.md) · [tasks.md](tasks.md) · [CODING_STANDARDS](../CODING_STANDARDS.md) |
 
@@ -145,7 +145,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 2. Frontmatter PHẢI có: `id`, `schema` (=`1`), `created_at` (ISO 8601 UTC, hậu tố `Z`), `title`, `status`, `repo`, `worktree`, `branch`, `head` (SHA đầy đủ), `agent` (mặc định `unknown`), `cairn_version`.
 3. Frontmatter CÓ THỂ có `task`, `session_id` (phiên đã viết handoff), `resumed_at`, `resume_count`.
 4. Body PHẢI bắt đầu bằng `# <title>` và chứa section bắt buộc: `## Goal`, `## Current state`, `## Next steps`.
-5. Body NÊN chứa: `## Decisions`, `## Tried / didn't work`, `## Open questions`, `## Key files`, `## Workspace`.
+5. Body NÊN chứa: `## Decisions` (kèm ai quyết định), `## Tried / didn't work`, `## User rules & preferences`, `## Environment / how to run`, `## Open questions`, `## Key files`, `## Workspace`.
 6. Section khác PHẢI được giữ nguyên.
 7. Captured state PHẢI nằm sau dòng `<!-- cairn:captured -->`, bắt đầu bằng `## Captured state (auto-generated — do not edit)`.
 8. Nội dung template, tên section, Captured state PHẢI bằng tiếng Anh (R22).
@@ -169,6 +169,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 8. Lỗi git ở một worktree PHẢI được ghi `error: <ngắn gọn>` cho trường đó, các worktree khác vẫn xử lý.
 9. `capture` KHÔNG ĐƯỢC ghi vào Store.
 10. KHI Body có Workspace section, THÌ `save` PHẢI chụp với mỗi dòng `worktree: <path>` (tương đối theo Dự án hoặc tuyệt đối): có tồn tại không, branch, `head`, số file chưa commit; với mỗi dòng `pipeline: <path>`: có tồn tại không. Kết quả nằm trong Captured state và khối máy đọc `cairn:captured-json`. Dòng nhãn khác giữ nguyên văn, không kiểm.
+11. KHI có `--session` và transcript của phiên đó tồn tại (`~/.claude/projects/<thư mục, ký tự ngoài chữ số đổi thành ->/<session>.jsonl`), THÌ `save` PHẢI ghi đường dẫn vào frontmatter `transcript`, và preamble PHẢI chỉ cho agent tra transcript đó khi thiếu chi tiết.
 
 ### R5. Lệnh `save` `[M1]`
 
@@ -188,10 +189,11 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 7. Captured state PHẢI đầy đủ (R4.2) cho worktree hiện tại và một dòng tóm tắt cho mỗi worktree khác.
 8. `--no-gh` bỏ truy vấn PR; `--dry-run` in file sẽ ghi ra stdout và không ghi Store.
 9. Thành công: in đúng một dòng `saved <id>` ra stdout, cảnh báo ra stderr, mã 0, `status: open`.
+10. KHI Body chứa đường dẫn chỉ tồn tại trong phiên viết (scratchpad, `/tmp/claude-…`), THÌ `save` PHẢI cảnh báo `temporary-path` ở đúng dòng (vẫn lưu).
 
 ### R6. Lệnh `list` `[M1]`
 
-1. PHẢI liệt kê handoff của Dự án, mới nhất trước, mỗi dòng: ID, Task (không có thì branch, không có nữa thì `-`), status, tuổi (`2h ago`), title (cắt 60 ký tự + `…`).
+1. PHẢI liệt kê handoff của Dự án, mới nhất trước, mỗi dòng: ID, Task (không có thì branch, không có nữa thì `-`), status, tuổi (`2h ago`), lần resume gần nhất (`5m ago`, `(2x)` nếu nhiều lần, `-` nếu chưa), title (cắt 60 ký tự + `…`).
 2. Mặc định 20 dòng; `--limit N`; `--all`.
 3. `--branch <b>` lọc branch; `--here` lọc branch hiện tại; `--status open|resumed`.
 4. `--json` in mảng frontmatter.
@@ -267,13 +269,15 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 1. `cairn hook session-start` PHẢI đọc JSON từ stdin, dùng trường `cwd` nếu có, ngược lại cwd tiến trình.
 2. Hook PHẢI đăng ký với matcher `startup|clear` (không chạy khi resume/compact phiên cũ — phiên đó vẫn còn ngữ cảnh).
-3. KHI Dự án có handoff `status: open` tuổi ≤ `CAIRN_HOOK_MAX_AGE` (mặc định `7d`), THÌ PHẢI chọn bản cùng branch hiện tại nếu có, ngược lại bản mới nhất (mỗi phiên có thể là một worktree/branch mới nên không đòi khớp branch), in JSON `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": <resume --brief>}}` ra stdout và cập nhật status như R9.3.
+3. KHI nguồn là `clear`, hoặc handoff `open` được chọn (cùng branch nếu có, ngược lại mới nhất; tuổi ≤ `CAIRN_HOOK_MAX_AGE`, mặc định `7d`) được lưu trong `CAIRN_HOOK_FULL_WINDOW` (mặc định `1h`), THÌ PHẢI in JSON `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": <resume --brief>}}` và cập nhật status như R9.3. Lý do (nhật ký dùng thật 2026-11-09 → 16): 6/7 lần chèn đầy đủ lúc mở phiên rơi vào phiên làm việc khác và khiến handoff bị đánh dấu `resumed` oan.
 4. Ngược lại PHẢI không in gì ra stdout.
 5. `additionalContext` PHẢI ≤ 9 000 ký tự (giới hạn của Claude Code là 10 000); dài hơn thì cắt và thêm `[truncated — run: cairn show <id>]`.
 6. KHÔNG ĐƯỢC gọi `gh` hay lệnh mạng.
 7. PHẢI luôn thoát mã 0, hoàn thành ≤ 2 giây với repo ≤ 10 worktree; lỗi chỉ ra stderr.
 8. `CAIRN_HOOK=off` tắt hook.
 9. KHI Dự án còn handoff `open` khác trong hạn, THÌ preamble PHẢI liệt kê chúng (Task hoặc ID, title) và cách đổi: `/cairn:resume <task>`; các bản đó giữ `open`.
+10. Ngoài trường hợp R13.3, KHI Dự án có handoff `open` trong hạn, THÌ hook PHẢI chỉ chèn một thông báo ngắn liệt kê chúng (Task hoặc ID, tuổi, title) kèm lệnh `cairn resume --dir <dir> <task>` để agent tự nạp khi yêu cầu của người dùng thuộc một task trong đó; KHÔNG ĐƯỢC đổi status.
+11. Plugin PHẢI đăng ký hook `UserPromptSubmit` gọi `cairn hook prompt-submit`: KHI tin nhắn chứa Task (nguyên từ, không phân biệt hoa thường) hoặc ID của một handoff `open` trong hạn, THÌ PHẢI chèn handoff đó đầy đủ như R13.3 (với `hookEventName` `UserPromptSubmit`) và đánh dấu `resumed`; không khớp thì không in gì. R13.6–R13.8 áp dụng.
 
 ### R14. Vòng đời và tự dọn `[M1]`
 
@@ -286,8 +290,9 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 5. Mỗi handoff bị xoá PHẢI in một dòng `cairn: removed <id> (<replaced|expired>)` ra stderr; trong hook chỉ ghi stderr, stdout giữ đúng R13.3–R13.4.
 6. `save --dry-run` KHÔNG ĐƯỢC xoá gì.
 7. Handoff vừa được resume KHÔNG ĐƯỢC bị xoá trong chính lệnh đó.
-8. Ngoài R14.1–R14.3 và R14.9, không cơ chế nào được xoá handoff.
+8. Ngoài R14.1–R14.3, R14.9 và R14.10, không cơ chế nào được xoá handoff.
 9. `cairn rm <ref>…` xoá tay sau khi hỏi `delete N handoff(s)? [y/N]`; `--yes` bỏ hỏi; stdin không phải TTY và không `--yes` → từ chối, mã 2. `[M2]`
+10. `cairn clean` xoá hàng loạt: mặc định các handoff `resumed`; `--status open|resumed|all`; `--older-than <dur>` chỉ lấy bản không được đụng tới (resume, không thì tạo) lâu hơn; in bảng các bản sẽ xoá; `--dry-run` không xoá; hỏi xác nhận như R14.9; không có gì thì in `nothing to clean`, mã 0. `[M2]`
 
 ### R15. Lệnh `doctor` `[M1]`
 
@@ -305,7 +310,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 5. Skill `resume` PHẢI tự kích hoạt khi người dùng muốn tiếp tục việc trước hoặc hỏi việc nào đang dở ("continue where we left off", "tiếp tục việc hôm qua", "làm tiếp", "còn task nào đang dở"). `[manual]`
 6. Khi hook đã chèn handoff, agent PHẢI có đủ chỉ dẫn trong preamble để tự tóm tắt mà không cần gọi skill `resume`.
 7. Người dùng KHÔNG ĐƯỢC phải chạy lệnh nào trong terminal trong luồng S1 sau khi đã cài plugin. `[manual]`
-8. KHI `/cairn:resume` không kèm task và hook chưa chèn handoff, THÌ skill PHẢI chạy `cairn list --status open`: không có → báo và cho xem 5 bản gần nhất; đúng một → resume luôn; nhiều → hiện bảng và hỏi người dùng chọn, không tự chọn. Chỉ hỏi danh sách thì hiện bảng và dừng (design D21).
+8. KHI `/cairn:resume` không kèm task, THÌ skill PHẢI chạy `cairn list` (cả `open` lẫn `resumed`), hiện bảng và hỏi người dùng chọn, kể cả khi chỉ có một bản; không tự chọn. Nếu hook đã chèn handoff thì nêu tên và đề xuất nó làm lựa chọn mặc định. Không có → báo và dừng. Chỉ hỏi danh sách thì hiện bảng và dừng. `/cairn:resume clean` chạy `cairn clean --dry-run`, hỏi xác nhận rồi mới xoá (design D21).
 
 ---
 
@@ -313,7 +318,7 @@ Ngoài bảng trên (R15, R17, R19–R21, R23) không thuộc M0. Ở M0 chỉ c
 
 ### R17. Quy ước CLI `[M1]`
 
-1. `cairn <command> [options] [args]`; lệnh M1: `template`, `capture`, `save`, `list`, `show`, `resume`, `doctor`, `hook` (`session-start`, `pre-compact`, `post-compact`), `version`; M2 thêm `rm`, `init`, `prompt`.
+1. `cairn <command> [options] [args]`; lệnh M1: `template`, `capture`, `save`, `list`, `show`, `resume`, `doctor`, `hook` (`session-start`, `pre-compact`, `post-compact`), `version`; M2 thêm `rm`, `clean`, `init`, `prompt`.
 2. `cairn`, `-h`, `--help` in usage ra stdout, mã 0; `cairn <cmd> -h` in help lệnh.
 3. `cairn version` / `--version` in `cairn <version>`, mã 0.
 4. Dữ liệu ra stdout; cảnh báo/lỗi ra stderr.
@@ -387,6 +392,17 @@ Bối cảnh: Claude Code không có hook cho "sắp hết quota" hay "ngữ c�
 2. `scripts/eval_check.py <handoff-file>` PHẢI in điểm `k/n` và tên các sự kiện thiếu; mã 1 khi `k` dưới ngưỡng (mặc định 7/8).
 3. `verification.md` PHẢI có nhật ký dùng thật, mỗi lần resume một dòng: ngày, ID, nguồn (`hook`/`skill`), số lần người dùng phải giải thích lại, bước đầu tiên agent đề xuất có đúng không (`Y`/`N`), thông tin bị thiếu, hook có gây phiền không. `[manual]`
 4. Ngưỡng đạt MVP: kịch bản chuẩn đạt ≥ 7/8 trong 3 lần chạy liên tiếp; nhật ký ≥ 10 lần resume với ≥ 80% bước đầu đúng và trung bình ≤ 1 lần giải thích lại. `[manual]`
+
+### R25. Chia sẻ handoff cho người khác `[M2]`
+
+**User story:** Là Dev, tôi muốn gửi handoff cho đồng nghiệp để agent của họ làm tiếp được, mà không lộ đường dẫn và file trên máy tôi.
+
+1. `cairn share [<ref>]` PHẢI ghi một bundle `.cairn.tgz` (mặc định `./<id>.cairn.tgz`, `--out` để đổi) gồm `HANDOFF.md`, `attachments/`, `patches/`; in `shared <đường dẫn>`.
+2. `HANDOFF.md` KHÔNG ĐƯỢC chứa đường dẫn tuyệt đối của người gửi: đường dẫn trong Dự án thành tương đối, thư mục home thành `~`; frontmatter bỏ `worktree`, `session_id`, `transcript`, `resumed_at`, `resume_count`, đặt lại `status: open`, thêm `shared_at`. Captured state liệt kê cho từng worktree: remote (bỏ user/token trong URL), branch, HEAD đầy đủ, HEAD đã có trên remote chưa, PR mở, patch; danh sách file đính kèm, file không đính kèm kèm lý do, và các bước khôi phục.
+3. Đính kèm: mọi file trong các thư mục `pipeline` của Workspace, và các file ở `Key files` mà git không mang theo (bị ignore hoặc ngoài git). File ngoài Dự án, không tìm thấy, vượt 5 MB/file hoặc 50 MB tổng thì không đính kèm và được liệt kê kèm lý do. File văn bản đính kèm cũng được viết lại đường dẫn.
+4. Mỗi worktree có thay đổi chưa commit (kể cả file mới, trừ file bị ignore) có một patch `git apply` được; index của người dùng không bị đổi.
+5. Secret trong file đính kèm hoặc patch → từ chối, mã 3, in `file: line N: secret-<pattern>` không kèm giá trị; `--redact` thay bằng `[REDACTED:…]`.
+6. `cairn import <file>` PHẢI kiểm từng phần tử (chỉ file thường, không đường dẫn tuyệt đối, không `..`, chỉ dưới `attachments/`, `patches/`), giải nén vào `.cairn-shared/<id>/` (có `.gitignore` chặn commit), lưu handoff `open` vào Store với đường dẫn của máy người nhận; bundle đã import → mã 2.
 
 ## 9. Definition of Done
 

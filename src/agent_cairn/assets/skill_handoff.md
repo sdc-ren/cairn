@@ -13,6 +13,21 @@ Rules:
 - Workspace: list every worktree and pipeline/run directory this task uses, with paths relative
   to the project directory, so the next session knows where to continue and cairn can check
   them for changes.
+- The next session has none of this conversation. Before writing, scan the whole conversation
+  for what it would otherwise have to rediscover or ask again:
+  - instructions the user gave that still apply (work mode, test policy, writing style, how to
+    address people, UI rules): put them under `User rules & preferences`, quoted briefly;
+  - how to bring the work back up (data source and why, services, ports, logins to redo, launch
+    commands, ids of stopped background runs): put them under `Environment / how to run`;
+  - who made each decision (the user, the PO with a comment id or link, a reviewer).
+- Paths: write them relative to the project directory; for files outside it, start with `~/`,
+  never with your home directory spelled out. Under `Key files` list every file the next agent
+  needs, including notes, tickets, evidence and other files git does not track: `cairn share`
+  attaches the ones git does not carry. Put pull request links (number and URL) in
+  `Current state` or `Workspace`.
+- Never point at paths that only exist for this session (scratchpad, /tmp/claude-...): copy the
+  file into the project first (for example the pipeline folder) and point there. cairn warns
+  about such paths.
 
 Steps:
 1. Fill the template below from this conversation. Replace every `<...>` and remove the
@@ -28,7 +43,14 @@ Steps:
 3. Exit code 3 means the handoff was rejected. Each stderr line is `line N: rule: message`
    (line numbers count from the first line of the template). Fix every reported problem and
    run step 2 again. Stop after 3 attempts and show the user the remaining lines verbatim.
-4. On success, reply in at most 2 lines: the saved id, and the first next step.
+4. If the user wants to send this handoff to someone else (another person, another machine),
+   also run `cairn share --dir "${CLAUDE_PROJECT_DIR}" <task or saved id>`. It writes a
+   `.cairn.tgz` bundle without the user's local paths, with untracked files and uncommitted work
+   attached. If it refuses because of secrets, show the listed lines and ask before adding
+   `--redact`. Tell the user the bundle path, any `warning:` lines (for example a commit that is
+   not pushed), and that the receiver runs `cairn import <file>` then `/cairn:resume <task>`.
+5. On success, reply in at most 2 lines: the saved id (and the bundle path if shared), and the
+   first next step.
 
 Template:
 

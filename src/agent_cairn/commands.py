@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import re
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from agent_cairn import (
@@ -22,6 +25,11 @@ from agent_cairn import (
     validate,
 )
 from agent_cairn.constants import (
+    CLAUDE_HOME,
+    CLAUDE_PROJECTS,
+    CLEAN_ALL,
+    FULL_WINDOW_DEFAULT,
+    FULL_WINDOW_ENV,
     GIT_TIMEOUT_SECONDS,
     HOOK_CONTEXT_MAX_CHARS,
     HOOK_GIT_TIMEOUT_SECONDS,
@@ -29,8 +37,11 @@ from agent_cairn.constants import (
     RULE_CREDENTIAL_PREFIX,
     SCHEMA_VERSION,
     SHORT_SHA_CHARS,
+    SOURCE_CLEAR,
     STATUS_OPEN,
+    STATUS_RESUMED,
     TEMPLATE_ASSET,
+    TRANSCRIPT_SUFFIX,
 )
 from agent_cairn.document import Handoff
 from agent_cairn.errors import InvalidHandoffError, UsageError
@@ -38,7 +49,6 @@ from agent_cairn.validate import Violation
 
 if TYPE_CHECKING:
     from datetime import datetime, timedelta
-    from pathlib import Path
 
     from agent_cairn.capture import RepoState
     from agent_cairn.document import MetaValue
@@ -77,6 +87,14 @@ class ListFilter:
     status: str | None = None
     branch: str | None = None
     limit: int | None = None
+
+
+@dataclass(frozen=True)
+class CleanOptions:
+    """Flags of ``cairn clean`` (R14.10): which status, and how long untouched."""
+
+    status: str = STATUS_RESUMED
+    older_than: timedelta | None = None
 
 
 def template() -> str:
@@ -137,24 +155,59 @@ def remove(cwd: Path, refs: list[str], *, confirmed: bool) -> list[str]:
         UsageError: confirmation is needed but stdin is not a terminal.
     """
     root = store.root(cwd)
-    chosen = {
-        str(h.meta.get("id")): h for h in (resolve.by_ref(store.handoffs(root), r) for r in refs)
-    }
+    chosen = [resolve.by_ref(store.handoffs(root), ref) for ref in refs]
+    return _delete(root, chosen, confirmed=confirmed)
+
+
+def clean_candidates(cwd: Path, options: CleanOptions) -> list[Handoff]:
+    """Return the handoffs ``cairn clean`` would delete, newest first (R14.10)."""
+    now = timeutil.now_utc()
+    return [
+        handoff
+        for handoff in store.handoffs(store.root(cwd))
+        if options.status in (CLEAN_ALL, handoff.meta.get("status"))
+        and (options.older_than is None or _idle(handoff, now) > options.older_than)
+    ]
+
+
+def clean(cwd: Path, chosen: list[Handoff], *, confirmed: bool) -> list[str]:
+    """Delete ``chosen`` (from ``clean_candidates``) after confirmation (R14.10)."""
+    return _delete(store.root(cwd), chosen, confirmed=confirmed)
+
+
+def _delete(root: Path, chosen: list[Handoff], *, confirmed: bool) -> list[str]:
+    unique = {str(handoff.meta.get("id")): handoff for handoff in chosen}
+    if not unique:
+        return []
     if not confirmed:
         if not sys.stdin.isatty():
             raise UsageError("refusing to delete without --yes when stdin is not a terminal")
-        if out.ask(f"delete {len(chosen)} handoff(s)? [y/N]").casefold() not in ("y", "yes"):
+        if out.ask(f"delete {len(unique)} handoff(s)? [y/N]").casefold() not in ("y", "yes"):
             return []
     with store.lock(root):
-        for hid, handoff in chosen.items():
-            store.path_of(handoff).unlink()
+        for hid, handoff in unique.items():
+            store.path_of(handoff).unlink(missing_ok=True)
             out.note(f"removed {hid} (manual)")
-    return list(chosen)
+    return list(unique)
+
+
+def _idle(handoff: Handoff, now: datetime) -> timedelta:
+    """Time since a handoff was last resumed, or since it was saved; unreadable dates are 0."""
+    stamp = handoff.meta.get("resumed_at") or handoff.meta.get("created_at")
+    try:
+        return now - timeutil.parse_iso(str(stamp))
+    except ValueError:
+        return now - now
 
 
 def show(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Path:
     """Return the file of the handoff ``ref`` names, or the best one for ``cwd`` (R7, R8)."""
     return store.path_of(_select(cwd, ref, any_branch=any_branch))
+
+
+def select(cwd: Path, ref: str | None, *, any_branch: bool = False) -> Handoff:
+    """Return the handoff ``ref`` names, or the best one for ``cwd`` (R7, R8)."""
+    return _select(cwd, ref, any_branch=any_branch)
 
 
 def resume(cwd: Path, options: ResumeOptions) -> str:
@@ -176,25 +229,60 @@ def resume(cwd: Path, options: ResumeOptions) -> str:
     return text
 
 
-def session_context(cwd: Path, *, max_age: timedelta) -> str | None:
-    """Return the brief resume text a new session receives, or None; marks it resumed (R13.3).
+def session_context(cwd: Path, *, max_age: timedelta, source: str) -> str | None:
+    """Return what a new session receives at start, or None (R13.3, R13.10).
 
-    Every session may be a fresh worktree on a new branch, so any open handoff of the project
-    qualifies; one on the current branch wins. The rest are listed so the user can switch.
+    Usually a short notice listing the open handoffs: a session may be about something else,
+    so nothing is loaded or marked resumed yet. The newest handoff is loaded in full only
+    after ``/clear`` or when it was saved within ``CAIRN_HOOK_FULL_WINDOW`` (default 1h).
     """
     root = store.root(cwd)
     now = timeutil.now_utc()
-    fresh = [
-        handoff
-        for handoff in store.handoffs(root)
-        if handoff.meta.get("status") == STATUS_OPEN
-        and now - timeutil.parse_iso(str(handoff.meta.get("created_at"))) <= max_age
-    ]
+    fresh = _fresh(root, now, max_age)
     if not fresh:
         return None
     chosen = resolve.pick(fresh, gitio.current_branch(cwd))
+    window = timeutil.parse_duration(os.environ.get(FULL_WINDOW_ENV, FULL_WINDOW_DEFAULT))
+    if source == SOURCE_CLEAR or now - _created(chosen) <= window:
+        return _load(cwd, root, chosen, others=[h for h in fresh if h is not chosen])
+    return render.notice(fresh, now=now, cwd=cwd)
+
+
+def prompt_context(cwd: Path, *, prompt: str, max_age: timedelta) -> str | None:
+    """Load the open handoff whose task or ID the user's message names, or None (R13.11)."""
+    root = store.root(cwd)
+    fresh = _fresh(root, timeutil.now_utc(), max_age)
+    named = [handoff for handoff in fresh if _names(prompt, handoff)]
+    if not named:
+        return None
+    return _load(cwd, root, named[0], others=[h for h in fresh if h is not named[0]])
+
+
+def _fresh(root: Path, now: datetime, max_age: timedelta) -> list[Handoff]:
+    """Open handoffs newer than ``max_age``, newest first."""
+    return [
+        handoff
+        for handoff in store.handoffs(root)
+        if handoff.meta.get("status") == STATUS_OPEN and now - _created(handoff) <= max_age
+    ]
+
+
+def _created(handoff: Handoff) -> datetime:
+    return timeutil.parse_iso(str(handoff.meta.get("created_at")))
+
+
+def _names(prompt: str, handoff: Handoff) -> bool:
+    """Whether ``prompt`` mentions the handoff's task (as a whole word, any case) or its ID."""
+    task = str(handoff.meta.get("task", ""))
+    if task and re.search(rf"(?<![\w-]){re.escape(task)}(?![\w-])", prompt, re.IGNORECASE):
+        return True
+    return str(handoff.meta.get("id", "")) in prompt
+
+
+def _load(cwd: Path, root: Path, chosen: Handoff, *, others: list[Handoff]) -> str:
+    """Render ``chosen`` for a session, mark it resumed and tidy the Store."""
+    now = timeutil.now_utc()
     report = drift.compute(chosen, git_timeout=HOOK_GIT_TIMEOUT_SECONDS, fallback=cwd)
-    others = [handoff for handoff in fresh if handoff is not chosen]
     text = _truncate(render.resume(chosen, report, brief=True, others=others), chosen)
     with store.lock(root):
         store.mark_resumed(chosen, now=now)
@@ -242,9 +330,35 @@ def _meta(repo: RepoState, body: str, options: SaveOptions, now: datetime) -> di
         "agent": options.agent,
         "cairn_version": __version__,
     }
-    optional = (("task", options.task), ("session_id", options.session_id))
+    transcript = _transcript(state.path, options.session_id)
+    optional = (
+        ("task", options.task),
+        ("session_id", options.session_id),
+        ("transcript", transcript),
+    )
     meta.update({key: value for key, value in optional if value})
     return meta
+
+
+def _transcript(directory: Path, session_id: str | None) -> str | None:
+    """Return the writing session's Claude Code transcript if it exists (R4.11).
+
+    Claude Code keeps it at ``~/.claude/projects/<dir with non-alphanumerics as ->/<id>.jsonl``.
+    """
+    if not session_id:
+        return None
+    for candidate in {str(directory), str(directory.resolve())}:
+        folder = re.sub(r"[^A-Za-z0-9]", "-", candidate)
+        path = (
+            Path.home()
+            / CLAUDE_HOME
+            / CLAUDE_PROJECTS
+            / folder
+            / f"{session_id}{TRANSCRIPT_SUFFIX}"
+        )
+        if path.is_file():
+            return str(path)
+    return None
 
 
 def _label(repo: RepoState, task: str | None) -> str:

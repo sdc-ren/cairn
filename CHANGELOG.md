@@ -6,6 +6,37 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `cairn share` packs a handoff for another person: your local paths are rewritten, the
+  session and transcript are left out, and the bundle carries the uncommitted work of each
+  worktree as a patch, the files git does not carry, remotes, pushed state and open PRs.
+  `cairn import` receives it. `/cairn:handoff` runs it when you say the handoff is for someone
+  else; `/cairn:resume` imports a bundle you give it.
+- The handoff skill asks for project-relative paths and a complete `Key files` list.
+
+### Changed
+
+- `/cairn:resume` without a task always shows every saved handoff, open and already resumed,
+  and asks which to continue, even when there is only one or the hook already loaded one.
+- A new session no longer loads the newest handoff by default: it gets a short list of open
+  handoffs, and the one you mention by task or ID in your message is loaded (new
+  `UserPromptSubmit` hook). Loading in full still happens after `/clear` or when the handoff is
+  less than an hour old (`CAIRN_HOOK_FULL_WINDOW`). Before, most sessions started on other work
+  received the wrong handoff and marked it resumed.
+- The handoff template adds `User rules & preferences` and `Environment / how to run`, and asks
+  who made each decision.
+
+### Added
+
+- `cairn clean` deletes saved handoffs in bulk: the `resumed` ones by default, or
+  `--status open|all`, optionally `--older-than 3d`; it shows the table and asks first
+  (`--dry-run`, `--yes`). `/cairn:resume clean` runs it from Claude Code.
+- `cairn list` has a `RESUMED` column: when a handoff was last resumed, and how often.
+- `save` warns about paths that only exist in the writing session (scratchpad, `/tmp/claude-…`).
+- `save --session` records the writing session's transcript path; the resume text tells the
+  agent to search it when a detail is missing.
+
 ## [0.2.1] - 2026-11-09
 
 ### Changed

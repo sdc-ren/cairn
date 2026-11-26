@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -9,7 +10,7 @@ from typing import TYPE_CHECKING
 from agent_cairn.errors import CairnError
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
 
@@ -22,11 +23,18 @@ class Result:
     stderr: str
 
 
-def run(args: Sequence[str], *, cwd: Path, timeout: float, stdin: str | None = None) -> Result:
+def run(
+    args: Sequence[str],
+    *,
+    cwd: Path,
+    timeout: float,
+    stdin: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> Result:
     """Run ``args`` without a shell and return its result.
 
     ``stdin`` is sent to the child; without it stdin is closed so a child never consumes input
-    meant for cairn (hooks read JSON from it).
+    meant for cairn (hooks read JSON from it). ``env`` adds variables to the inherited ones.
 
     Raises:
         CairnError: the executable is missing or did not finish within ``timeout`` seconds.
@@ -35,6 +43,7 @@ def run(args: Sequence[str], *, cwd: Path, timeout: float, stdin: str | None = N
         done = subprocess.run(
             list(args),
             cwd=cwd,
+            env={**os.environ, **env} if env else None,
             input=stdin,
             stdin=None if stdin is not None else subprocess.DEVNULL,
             capture_output=True,

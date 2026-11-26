@@ -57,9 +57,9 @@ Every route, `npx` included, runs the same Python code, so `python3` 3.9+ must b
    ```
    or just say "save context", "running out of quota", "lưu ngữ cảnh". The agent replies with
    the handoff ID, for example `saved 20261109-083012-proj-268`.
-2. **Resume.** Open a new session in the same project, on any account. The handoff is already
-   in context; say "continue PROJ-268" and the agent summarises the goal, what is done and the
-   next step.
+2. **Resume.** Open a new session in the same project, on any account. cairn lists the open
+   handoffs; mention the task ("continue PROJ-268", `/tf:build PROJ-268`) and that handoff is
+   loaded, then the agent summarises the goal, what is done and the next step.
 3. **Look around** from a terminal:
    ```bash
    cairn list          # what is saved for this project
@@ -71,7 +71,7 @@ Every route, `npx` included, runs the same Python code, so `python3` 3.9+ must b
 | Skill | Plugin name | Without plugin | What it does |
 |---|---|---|---|
 | handoff | `/cairn:handoff [title]` | `/cairn-handoff` | The agent writes the handoff from the conversation and saves it in one turn. It passes the ticket as the task when it sees one, fixes anything cairn rejects (up to 3 tries), and replies in at most 2 lines. |
-| resume | `/cairn:resume [task]` | `/cairn-resume` | Continue a handoff. With a task, opens it. Without one: uses the handoff the hook already injected; otherwise opens the only open one, or shows a table and asks which one. |
+| resume | `/cairn:resume [task\|clean]` | `/cairn-resume` | Continue a handoff. With a task, opens it. Without one: shows every saved handoff (`open` = not resumed yet, `resumed` = already continued, and when) and asks which one. `clean` lists the resumed ones, asks, then deletes them. |
 
 Both skills also trigger from plain language in English or Vietnamese ("handoff", "save
 context", "sắp hết quota"; "continue where we left off", "làm tiếp", "còn task nào đang dở").
@@ -80,7 +80,8 @@ Hooks run by themselves:
 
 | Hook | When | What it does |
 |---|---|---|
-| `SessionStart` | new session or `/clear` | Injects the project's newest open handoff (preferring the current branch) with its drift report, lists the other open ones, and marks the injected one `resumed`. |
+| `SessionStart` | new session or `/clear` | Lists the project's open handoffs in a short notice, without loading or marking any. After `/clear`, or when the newest was saved in the last hour, it loads that one in full instead. |
+| `UserPromptSubmit` | each message you send | When the message names an open handoff's task or ID (`continue PROJ-268`, `/tf:build PROJ-268`), loads that handoff in full with its drift report and marks it `resumed`. |
 | `PreCompact` | before context compaction | Asks the summary to keep the goal, decisions, failed attempts, next steps and resources. |
 | `SessionStart` (compact) | after compaction | Shows one line suggesting `/cairn:handoff` when nothing was saved in the last 2 hours. |
 
@@ -124,9 +125,9 @@ cairn save --task PROJ-268 --file handoff.md   # then save it
 | `--json` | Frontmatter of each handoff as JSON |
 
 ```
-ID                        TASK      STATUS   AGE      TITLE
-20261109-100105-proj-274  PROJ-274  resumed  40m ago  QC round 2 fixes
-20261109-095106-proj-268  PROJ-268  open     50m ago  Checkout: bulk discount
+ID                        TASK      STATUS   AGE      RESUMED  TITLE
+20261109-100105-proj-274  PROJ-274  resumed  40m ago  5m ago   QC round 2 fixes
+20261109-095106-proj-268  PROJ-268  open     50m ago  -        Checkout: bulk discount
 ```
 
 ### `cairn show [<ref>]` — print a handoff file
@@ -148,10 +149,55 @@ Prints the handoff with instructions for the agent and a drift report, then mark
 | `--copy` | Also copy the output to the clipboard (pbcopy, wl-copy or xclip), e.g. for another agent |
 | `--any-branch` | Ignore the current branch when choosing |
 
+### `cairn share [<ref>]` — send a handoff to someone else
+
+Writes `<id>.cairn.tgz`, a bundle another person's agent can continue from without access to
+your machine:
+
+- `HANDOFF.md`: the handoff with your paths rewritten (project paths become relative, your home
+  becomes `~`), no session or transcript, and a captured state listing each worktree's remote,
+  branch, full HEAD (and whether it is pushed), open PRs, and restore steps.
+- `patches/`: the uncommitted work of each worktree, new files included, for `git apply`.
+- `attachments/`: files git does not carry: the Workspace `pipeline` folders and the `Key files`
+  that are ignored or outside git. Files outside the project are listed as not attached.
+
+It refuses when an attachment or patch holds a likely secret, and warns about commits that
+are not on any remote.
+
+| Option | Effect |
+|---|---|
+| `--out FILE` | Write the bundle to FILE |
+| `--redact` | Mask likely secrets instead of refusing |
+| `--no-gh` | Do not ask gh for pull requests |
+| `--any-branch` | Ignore the current branch when choosing |
+
+### `cairn import <file>` — receive a shared handoff
+
+Checks every member of the bundle, unpacks it into `.cairn-shared/<id>/` (git-ignored) and
+saves the handoff as open for this project. Then run `/cairn:resume <task>`; the agent follows
+the restore steps (check out the commit, apply the patch, copy the attachments) first.
+
 ### `cairn rm <ref>...` — delete handoffs
 
 Asks `delete N handoff(s)? [y/N]` first. Pass `--yes` to skip the question; it is required when
 stdin is not a terminal. If any reference matches nothing, nothing is deleted.
+
+### `cairn clean` — delete handoffs in bulk
+
+Prints the handoffs it would delete, then asks `delete N handoff(s)? [y/N]` like `rm`.
+Without options it deletes the `resumed` ones. Prints `nothing to clean` when none match.
+
+| Option | Effect |
+|---|---|
+| `--status resumed\|open\|all` | Which handoffs to delete (default `resumed`) |
+| `--older-than AGE` | Only those not resumed (or, if never resumed, saved) within `AGE`, e.g. `3d` |
+| `--dry-run` | Show the table only; delete nothing |
+| `--yes` | Do not ask; required when stdin is not a terminal |
+
+```bash
+cairn clean --dry-run                    # what would go
+cairn clean --status all --older-than 14d
+```
 
 ### `cairn capture` — show the git state cairn would attach
 
@@ -220,10 +266,17 @@ API change merged in #633; App rounding fix open in #190.
 - [ ] Run the price backfill on prod after deploy (dry run first)
 
 ## Decisions
-- Discount lives in the pricing service, not the API layer: the App calls it too.
+- Discount lives in the pricing service, not the API layer: the App calls it too (PO, comment 1042).
 
 ## Tried / didn't work
 - Rounding in the API layer double-rounded prices; abandoned.
+
+## User rules & preferences
+- "Fix fast, skip unit tests; I review in the browser."
+
+## Environment / how to run
+- DB `app_db_proj_268`, cloned from the latest dev dump because dev has the bulk-order data.
+- `pnpm dev` (port 3000); log in to the staging admin again in Chrome before e2e.
 
 ## Open questions
 - Does the discount apply before or after tax?
@@ -243,7 +296,8 @@ API change merged in #633; App rounding fix open in #190.
 | `Next steps` written as list items | Required |
 | No likely secrets (or use `--redact`) | Required |
 | At most 12,000 characters | Required |
-| `Decisions`, `Tried / didn't work`, `Open questions`, `Key files` | Warning if missing |
+| `Decisions` (with who decided), `Tried / didn't work`, `User rules & preferences`, `Environment / how to run`, `Open questions`, `Key files` | Warning if missing |
+| Paths that only exist in the writing session (scratchpad, `/tmp/claude-…`) | Warning |
 | More than 6,000 characters | Warning |
 
 `Workspace` lines labelled `worktree` (a git checkout) or `pipeline` (a folder) are recorded at
@@ -291,6 +345,7 @@ session A                                   session B (new account, new day, new
 | `CAIRN_HOME` | `~/.cairn` | Root folder for all Stores |
 | `CAIRN_HOOK` | on | `off` disables the `SessionStart` hook |
 | `CAIRN_HOOK_MAX_AGE` | `7d` | Ignore open handoffs older than this (`d`, `h`, `m`) |
+| `CAIRN_HOOK_FULL_WINDOW` | `1h` | At session start, load a handoff this recent in full instead of listing it |
 | `CAIRN_KEEP_RESUMED` | `7d` | Remove resumed handoffs after this long |
 | `CAIRN_KEEP_OPEN` | `30d` | Remove handoffs nobody resumed after this long |
 | `CAIRN_NUDGE` | on | `off` disables the compaction hooks |

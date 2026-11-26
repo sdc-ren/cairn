@@ -52,6 +52,8 @@ Chia việc: **agent viết lý do; CLI ghi dữ kiện, kiểm tra, báo drift,
 | D20 | Workspace section có nhãn `worktree`/`pipeline` được cairn chụp và kiểm drift; nhãn khác giữ nguyên văn | Tự dò mọi git repo trong workspace; gắn cứng quy ước `.pipeline/` | Agent biết tài nguyên nào thuộc task; dò cả workspace thì lẫn task khác và chậm. Nhãn chung nên dự án khác dùng quy ước khác vẫn được. |
 | D21 | Không thêm skill `list`; `/cairn:resume` không kèm task tự hiện bảng `cairn list --status open` để chọn | Skill `/cairn:list` riêng | Xem danh sách gần như luôn đi kèm chọn một task để làm tiếp; giữ 2 lệnh phải nhớ và không tốn thêm context mỗi phiên (~60 token cho một skill). |
 | D22 | Kênh không có plugin (`init`, `prompt`, AGENTS.md) dùng chung module `integrations` với `gen_plugin.py`; skill rời tên `cairn-handoff`/`cairn-resume`; `prompt` thay phần chỉ Claude Code hiểu bằng một bảng thay thế duy nhất | Viết riêng văn bản cho từng kênh | Một nguồn văn bản (R21.5): sửa skill là mọi kênh đổi theo. Không có namespace `/cairn:` nên cần tiền tố tránh trùng `/handoff` của người khác. |
+| D23 | Đầu phiên chỉ chèn thông báo liệt kê handoff mở; nạp đầy đủ khi `/clear`, khi handoff mới lưu (< 1h), hoặc khi tin nhắn đầu nhắc mã task (hook `UserPromptSubmit`) | Chèn đầy đủ bản mới nhất mọi phiên (bản trước) | Nhật ký thật: 6/7 lần chèn đầy đủ rơi vào phiên làm việc khác và đánh dấu `resumed` oan, làm mất handoff. Mã task trong tin nhắn là tín hiệu chắc chắn về việc người dùng định làm. |
+| D24 | Template thêm `User rules & preferences`, `Environment / how to run`, người quyết định; cảnh báo đường dẫn tạm; ghi đường dẫn transcript | Chỉ dựa vào tóm tắt của agent | So handoff với transcript: thứ hay mất là chỉ dẫn người dùng nói trong chat, cách dựng lại môi trường, nguồn của quyết định, và đường dẫn chết. Transcript là nguồn đầy đủ cuối cùng khi tóm tắt thiếu. |
 
 ## 3. Cấu trúc repo
 
@@ -112,6 +114,8 @@ cairn/
 ```
 
 M2 thêm: `clipboard.py` (pbcopy → wl-copy → xclip), `integrations.py` (skill rời, AGENTS.md, `prompt`, gỡ cài); `gen_plugin.py` dùng lại `integrations.skill_text`.
+
+R25 thêm: `portable.py` (lõi thuần: viết lại đường dẫn, render captured state của bundle), `share.py` (vỏ: gom worktree, patch, file đính kèm, ghi tar), `importer.py` (vỏ: kiểm và giải nén bundle, lưu handoff); asset `shared.md`.
 
 Hướng phụ thuộc giữa các module: nguồn duy nhất là bảng `ALLOWED` trong `tests/test_imports.py`; test chặn mọi import ngoài bảng (bỏ qua import chỉ dùng cho type hint) và chặn lõi thuần import vỏ I/O. Thêm cạnh mới là thay đổi thiết kế, sửa bảng trong cùng PR.
 

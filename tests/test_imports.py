@@ -80,9 +80,11 @@ ALLOWED = {
         "errors",
         "gitio",
         "hook",
+        "importer",
         "integrations",
         "out",
         "render",
+        "share",
         "store",
         "timeutil",
     },
@@ -111,18 +113,46 @@ ALLOWED = {
     "gh": {"constants", "errors", "proc"},
     "gitio": {"constants", "errors", "proc"},
     "hook": {"assets", "commands", "constants", "out", "store", "timeutil"},
+    "importer": {"constants", "document", "errors", "out", "portable", "store", "timeutil"},
     "integrations": {"assets", "constants"},
     "out": set(),
+    "portable": {"assets", "constants"},
     "proc": {"errors"},
     "render": {"assets", "capture", "constants", "document", "timeutil"},
     "resolve": {"constants", "document", "errors"},
     "secrets": set(),
+    "share": {
+        "capture",
+        "constants",
+        "document",
+        "errors",
+        "gh",
+        "gitio",
+        "out",
+        "portable",
+        "secrets",
+        "store",
+        "timeutil",
+    },
     "store": {"constants", "document", "errors", "gitio", "out", "timeutil"},
     "timeutil": set(),
     "validate": {"constants", "document"},
 }
-PURE_CORE = {"document", "validate", "secrets", "resolve", "render", "timeutil"}
-IO_SHELL = {"proc", "gitio", "gh", "store", "out", "cli", "hook", "commands", "doctor", "clipboard"}
+PURE_CORE = {"document", "validate", "secrets", "resolve", "render", "timeutil", "portable"}
+IO_SHELL = {
+    "proc",
+    "gitio",
+    "gh",
+    "store",
+    "out",
+    "cli",
+    "hook",
+    "commands",
+    "doctor",
+    "clipboard",
+    "share",
+    "importer",
+}
 
 
 def _runtime_nodes(tree):

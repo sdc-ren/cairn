@@ -213,3 +213,67 @@ def test_uninstall_leaves_no_trace_of_what_cairn_created(repo, capsys):
 
     assert not (repo / ".claude").exists()
     assert not (repo / "AGENTS.md").exists()
+
+
+def _ids(repo):
+    return sorted(p.stem for p in store.root(repo).glob("*.md"))
+
+
+@pytest.mark.req("R14.10")
+def test_clean_deletes_only_resumed_by_default(repo, monkeypatch, capsys):
+    _save(monkeypatch, "A-1")
+    _save(monkeypatch, "B-2")
+    assert main(["resume", "A-1"]) == 0
+    capsys.readouterr()
+
+    assert main(["clean", "--yes"]) == 0
+
+    output = capsys.readouterr()
+    assert "A-1" in output.out
+    assert "B-2" not in output.out
+    assert len(_ids(repo)) == 1
+    assert _ids(repo)[0].endswith("b-2")
+    assert "(manual)" in output.err
+
+
+@pytest.mark.req("R14.10")
+def test_clean_dry_run_and_status_all(repo, monkeypatch, capsys):
+    _save(monkeypatch, "A-1")
+    _save(monkeypatch, "B-2")
+
+    assert main(["clean", "--status", "all", "--dry-run"]) == 0
+    assert "would delete 2 handoff(s)" in capsys.readouterr().out
+    assert len(_ids(repo)) == 2
+
+    assert main(["clean"]) == 0
+    assert "nothing to clean" in capsys.readouterr().out
+
+    assert main(["clean", "--status", "all", "--yes"]) == 0
+    assert _ids(repo) == []
+
+
+@pytest.mark.req("R14.10")
+def test_clean_needs_yes_off_terminal_and_checks_age(repo, monkeypatch, capsys):
+    _save(monkeypatch, "A-1")
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+
+    assert main(["clean", "--status", "open"]) == 2
+    assert main(["clean", "--status", "open", "--older-than", "1d", "--yes"]) == 0
+    assert "nothing to clean" in capsys.readouterr().out
+    assert main(["clean", "--older-than", "soon"]) == 2
+    assert len(_ids(repo)) == 1
+
+
+@pytest.mark.req("R6.1")
+def test_list_shows_when_a_handoff_was_resumed(repo, monkeypatch, capsys):
+    _save(monkeypatch, "A-1")
+    _save(monkeypatch, "B-2")
+    main(["resume", "A-1"])
+    main(["resume", "A-1"])
+    capsys.readouterr()
+
+    main(["list"])
+
+    rows = {line.split()[1]: line for line in capsys.readouterr().out.splitlines()[1:]}
+    assert "(2x)" in rows["A-1"]
+    assert rows["B-2"].split()[2:6] == ["open", "just", "now", "-"]

@@ -69,7 +69,7 @@ def test_hooks_register_session_start_in_exec_form():
     entries = {entry["matcher"]: entry["hooks"] for entry in hooks["SessionStart"]}
     assert entries["startup|clear"][0]["args"] == ["hook", "session-start"]
     handlers = [h for event in hooks.values() for entry in event for h in entry["hooks"]]
-    assert len(handlers) == 3
+    assert len(handlers) == 4
     for handler in handlers:
         assert handler["type"] == "command"
         assert handler["command"] == "${CLAUDE_PLUGIN_ROOT}/bin/cairn"
@@ -98,7 +98,7 @@ def test_skill_frontmatter_is_complete_and_user_invocable(name):
 def test_handoff_skill_saves_in_one_command_allowed_without_prompt():
     meta, body = _skill("handoff")
 
-    assert meta["allowed-tools"] == "Bash(cairn save *)"
+    assert meta["allowed-tools"] == "Bash(cairn save *) Bash(cairn share *)"
     assert 'cairn save --dir "${CLAUDE_PROJECT_DIR}" --agent claude-code' in body
     assert "--session ${CLAUDE_SESSION_ID}" in body
     assert "<<'CAIRN_EOF'" in body
@@ -133,12 +133,14 @@ def test_template_has_required_and_recommended_sections_with_hints():
         "Next steps",
         "Decisions",
         "Tried / didn't work",
+        "User rules & preferences",
+        "Environment / how to run",
         "Open questions",
         "Key files",
         "Workspace",
     ]
     assert template.count("<!-- required:") == 3
-    assert template.count("<!--") == 8
+    assert template.count("<!--") == 10
 
 
 @pytest.mark.req("R3.3")
@@ -189,3 +191,13 @@ def test_launcher_works_through_symlinks(tmp_path):
     for link in (direct, nested):
         done = subprocess.run([str(link), "version"], capture_output=True, text=True, check=False)
         assert (done.returncode, done.stdout) == (0, f"cairn {__version__}\n")
+
+
+@pytest.mark.req("R2.5")
+def test_handoff_skill_asks_for_rules_environment_and_decision_owner():
+    _, body = _skill("handoff")
+
+    assert "User rules & preferences" in body
+    assert "Environment / how to run" in body
+    assert "who made each decision" in body
+    assert "Never point at paths that only exist for this session" in body

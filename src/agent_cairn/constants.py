@@ -18,12 +18,14 @@ META_ORDER = (
     "cairn_version",
     "task",
     "session_id",
+    "transcript",
     "resumed_at",
     "resume_count",
 )
 META_INT_KEYS = frozenset({"schema", "resume_count"})
 STATUS_OPEN = "open"
 STATUS_RESUMED = "resumed"
+CLEAN_ALL = "all"  # `cairn clean --status all`: every status (R14.10)
 
 # Body rules (R5.3)
 REQUIRED_SECTIONS = ("Goal", "Current state", "Next steps")
@@ -39,7 +41,17 @@ RULE_RESERVED_MARKER = "reserved-marker"
 RULE_MISSING_RECOMMENDED = "missing-recommended"
 RULE_BODY_LONG = "body-long"
 LONG_BODY_CHARS = 6_000
-RECOMMENDED_SECTIONS = ("Decisions", "Tried / didn't work", "Open questions", "Key files")
+RECOMMENDED_SECTIONS = (
+    "Decisions",
+    "Tried / didn't work",
+    "User rules & preferences",
+    "Environment / how to run",
+    "Open questions",
+    "Key files",
+)
+RULE_TEMPORARY_PATH = "temporary-path"
+# Paths that only exist for the session that wrote them (Claude Code scratchpads, tmp dirs).
+TEMPORARY_PATH_PATTERN = r"(?:/private)?/tmp/claude-[^\s`)]*|\bscratchpad/"
 SECTION_ALIASES = {"tried": "tried / didn't work", "didn't work": "tried / didn't work"}
 ERROR = "error"
 WARNING = "warning"
@@ -126,3 +138,27 @@ CLAUDE_DIR = ".claude"
 SKILLS_DIR = "skills"
 SKILL_FILE = "SKILL.md"
 CLIPBOARD_TIMEOUT_SECONDS = 5
+
+# Session start, see R13.3, R13.10 and R13.11
+FULL_WINDOW_ENV = "CAIRN_HOOK_FULL_WINDOW"
+FULL_WINDOW_DEFAULT = "1h"
+SOURCE_CLEAR = "clear"
+NOTICE_ASSET = "notice.md"
+PROMPT_EVENT_NAME = "UserPromptSubmit"
+CLAUDE_HOME = ".claude"
+CLAUDE_PROJECTS = "projects"
+TRANSCRIPT_SUFFIX = ".jsonl"
+
+# Sharing a handoff with someone else, see R25
+SHARE_DIR = ".cairn-shared"
+BUNDLE_SUFFIX = ".cairn.tgz"
+BUNDLE_HANDOFF = "HANDOFF.md"
+BUNDLE_ATTACHMENTS = "attachments"
+BUNDLE_PATCHES = "patches"
+SHARE_MAX_FILE_BYTES = 5 * 1024 * 1024
+SHARE_MAX_TOTAL_BYTES = 50 * 1024 * 1024
+SHARED_ASSET = "shared.md"
+SHARED_HEADING = "## Captured state (shared bundle — do not edit)"
+KEY_FILES_SECTION = "Key files"
+SHARED_DROPPED_META = ("worktree", "session_id", "transcript", "resumed_at", "resume_count")
+BINARY_SNIFF_BYTES = 8192
